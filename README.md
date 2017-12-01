@@ -9,12 +9,12 @@ Right now I'm resizing images to be set dimensions and reading the color values 
 
 To compile a C# file (.cs) into a .exe
 
-'''
+```
 mcs test.cs -pkg:dotnet
-'''
+```
 
 To run the .exe
 
-'''
+```
 mono --arch=32 test.exe
-'''
+```
