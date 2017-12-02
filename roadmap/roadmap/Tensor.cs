@@ -1,6 +1,5 @@
-﻿using System.Numerics;
-using System;
-
+﻿using System;
+using System.Numerics;
 
 public struct Tensor
 {
@@ -85,15 +84,15 @@ public struct Tensor
     }
 }
 
-public struct Vertex {
-    internal readonly Vector2 PositionField;
-    public Vector2 Position { get { return PositionField; } }
+//public struct Vertex {
+//    internal readonly Vector2 PositionField;
+//    public Vector2 Position { get { return PositionField; } }
 
-    private readonly List<Edge> _edges = new List<Edge>();
-    public IEnumerable<Edge> Edges { get { return _edges; } }
+//    private readonly List<Edge> _edges = new List<Edge>();
+//    public IEnumerable<Edge> Edges { get { return _edges; } }
 
-    public int EdgeCount { get { return _edges.Count; } }
-}
+//    public int EdgeCount { get { return _edges.Count; } }
+//}
 
 public struct Edge {
     
@@ -112,5 +111,9 @@ public struct Vector2
     {
         X = a;
         Y = b;
+    }
+
+    public double Length() {
+        return Math.Sqrt(X * X + Y * Y);
     }
 }

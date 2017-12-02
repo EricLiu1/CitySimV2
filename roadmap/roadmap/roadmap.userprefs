@@ -1,21 +1,9 @@
 ﻿<Properties StartupConfiguration="{A111CD87-6AA0-4E52-B24B-5A825205136D}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Tensor.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Program.cs">
     <Files>
-      <File FileName="Program.cs" Line="76" Column="44" />
-      <File FileName="Tensor.cs" Line="1" Column="1" />
+      <File FileName="Program.cs" Line="98" Column="27" />
+      <File FileName="Tensor.cs" Line="18" Column="6" />
     </Files>
-    <Pads>
-      <Pad Id="ProjectPad">
-        <State name="__root__">
-          <Node name="roadmap" expanded="True">
-            <Node name="roadmap" expanded="True">
-              <Node name="Properties" expanded="True" />
-              <Node name="Tensor.cs" selected="True" />
-            </Node>
-          </Node>
-        </State>
-      </Pad>
-    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
   <MonoDevelop.Ide.ItemProperties.roadmap PreferredExecutionTarget="MonoDevelop.Default" />

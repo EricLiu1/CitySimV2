@@ -42,9 +42,13 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="Program.cs">
+      <IncludeInPackage>true</IncludeInPackage>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tensor.cs" />
+    <Compile Include="Tensor.cs">
+      <IncludeInPackage>true</IncludeInPackage>
+    </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

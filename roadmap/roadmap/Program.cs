@@ -30,9 +30,13 @@
 
 using System;
 using System.Reflection;
+using System.Collections;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Cairo;
 using Gtk;
+using System.Collections.Generic;
+
 
 public class GtkCairo
 {
@@ -59,31 +63,65 @@ public class GtkCairo
 
 public class CairoGraphic : DrawingArea
 {
+
     static readonly double M_PI = 3.14159265358979323846;
     static Tensor t;
 
     static void draw(Cairo.Context gr, int width, int height)
     {
-        double xc = 0.5;
-        double yc = 0.5;
-        double radius = 0.4;
-        double angle1 = 45.0 * (M_PI / 180.0);  /* angles are specified */
-        double angle2 = 180.0 * (M_PI / 180.0);  /* in radians           */
 
         gr.Scale(width, height);
         gr.LineWidth = 0.01;
-
+ 
         /* draw helping lines */
         gr.SetSourceColor(new Color(1, 1, 0, 1));
-        gr.LineTo(new PointD(xc, yc));
-        gr.Arc(xc, yc, radius, angle1, angle1);
-        gr.LineTo(new PointD(xc, yc));
+        gr.LineTo(new PointD(0.5, 0.5));
+
+        List<PointD> streamlines = CairoGraphic.test();
+        for (int i = 0; i < streamlines.Count; ++i) {
+            Console.WriteLine(streamlines[i].X + " " + streamlines[i].Y);
+            gr.LineTo(streamlines[i]);
+            gr.Stroke();
+            gr.LineTo(streamlines[i]);
+        }
+
+        //gr.Arc(xc, yc, radius, angle1, angle1);
+        //gr.LineTo(new PointD(xc, yc));
         gr.Stroke();
 
     }
 
     public void GenerateTensor() {
         t = new Tensor(5, M_PI);
+    }
+
+    public static List<PointD> test() {
+        var direction = new Vector2(0, 0);
+        var position = new PointD(0.5, 0.5);
+
+        List<PointD> ans = new List<PointD>();
+        ans.Add(position);
+
+
+        for (int i = 0; i < 100; ++i) {
+            
+            Vector2 coord = new Vector2( (float)position.X, (float)position.Y);
+            Tensor t = Tensor.FromXY(coord);
+            Vector2 major = new Vector2();
+            Vector2 minor = new Vector2();
+
+            Random random = new Random();
+            t.EigenVectors(out major, out minor);
+            //direction = new Vector2((float) random.NextDouble() * major.X, (float) random.NextDouble() * major.Y);
+            direction = major;
+            if (direction.Length() < 0.00005f)
+                break;
+            
+            position = new PointD(position.X + direction.X, position.Y + direction.Y);
+            ans.Add(position);
+        }
+
+        return ans;
     }
 
 
