@@ -33,10 +33,11 @@ using System.Reflection;
 using System.Collections;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using Cairo;
 using Gtk;
 using System.Collections.Generic;
-
+using System.Drawing;
 
 public class GtkCairo
 {
@@ -44,7 +45,7 @@ public class GtkCairo
 
     static void Main()
     {
-        Application.Init();
+        Gtk.Application.Init();
         Gtk.Window w = new Gtk.Window("RoadMap gridlines");
 
         a = new CairoGraphic();
@@ -55,7 +56,7 @@ public class GtkCairo
         w.Resize(500, 500);
         w.ShowAll();
 
-        Application.Run();
+        Gtk.Application.Run();
     }
 
 
@@ -66,36 +67,71 @@ public class CairoGraphic : DrawingArea
 
     static readonly double M_PI = 3.14159265358979323846;
     static Tensor t;
+    static bool p = false;
+
+    static int width2 = 0;
+    static int height2 = 0;
+    PictureBox boundaryMap = new PictureBox();
+    PictureBox terrainMap = new PictureBox();
+    System.Drawing.Color[,] density;
+    System.Drawing.Color[,] terrain;
 
     static void draw(Cairo.Context gr, int width, int height)
     {
+        
+
 
         gr.Scale(width, height);
         gr.LineWidth = 0.01;
  
         /* draw helping lines */
-        gr.SetSourceColor(new Color(1, 1, 0, 1));
+        gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
+
+
         gr.LineTo(new PointD(0.5, 0.5));
 
         List<PointD> streamlines = CairoGraphic.test();
-        for (int i = 0; i < streamlines.Count; ++i) {
+        for (int i = 0; i < streamlines.Count; ++i)
+        {
             Console.WriteLine(streamlines[i].X + " " + streamlines[i].Y);
             gr.LineTo(streamlines[i]);
             gr.Stroke();
             gr.LineTo(streamlines[i]);
         }
-
-        //gr.Arc(xc, yc, radius, angle1, angle1);
-        //gr.LineTo(new PointD(xc, yc));
-        gr.Stroke();
-
     }
 
+    public void InitializeSeeds() {
+        boundaryMap.Image = System.Drawing.Image.FromFile("boundary_map.png");
+        boundaryMap.Size = new Size(width2, height2);
+        boundaryMap.Location = new System.Drawing.Point(0, 0);
+        density = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
+
+        for (int i = 0; i < boundaryMap.Width; ++i)
+        {
+            for (int j = 0; j < boundaryMap.Height; ++j)
+            {
+                density[i, j] = GetColorAt(i, j, boundaryMap);
+            }
+        }
+
+        terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
+        terrainMap.Size = new Size(width2, height2);
+        terrainMap.Location = new System.Drawing.Point(0, 0);
+        terrain = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
+
+        for (int i = 0; i < terrainMap.Width; ++i) {
+            for (int j = 0; j < terrainMap.Height; ++j) {
+                terrain[i, j] = GetColorAt(i, j, terrainMap);
+            }
+        }
+
+    }
     public void GenerateTensor() {
         t = new Tensor(5, M_PI);
     }
 
-    public static List<PointD> test() {
+    public static List<PointD> test() 
+    {
         var direction = new Vector2(0, 0);
         var position = new PointD(0.5, 0.5);
 
@@ -112,7 +148,6 @@ public class CairoGraphic : DrawingArea
 
             Random random = new Random();
             t.EigenVectors(out major, out minor);
-            //direction = new Vector2((float) random.NextDouble() * major.X, (float) random.NextDouble() * major.Y);
             direction = major;
             if (direction.Length() < 0.00005f)
                 break;
@@ -135,8 +170,20 @@ public class CairoGraphic : DrawingArea
         int x, y, w, h, d;
         win.GetGeometry(out x, out y, out w, out h, out d);
 
+        if (!p)
+        {
+            width2 = w;
+            height2 = h;
+            InitializeSeeds();
+            p = true;
+        }
+
         draw(g, w, h);
         return true;
     }
 
+    public System.Drawing.Color GetColorAt(int x, int y, PictureBox p)
+    {
+        return ((Bitmap)p.Image).GetPixel(x, y);
+    }
 }
