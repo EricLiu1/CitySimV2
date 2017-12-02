@@ -1,0 +1,6 @@
+/Users/AbhinavSangisetti/Projects/roadmap/roadmap/bin/Debug/roadmap.exe
+/Users/AbhinavSangisetti/Projects/roadmap/roadmap/bin/Debug/roadmap.pdb
+/Users/AbhinavSangisetti/Projects/roadmap/roadmap/obj/x86/Debug/roadmap.csprojResolveAssemblyReference.cache
+/Users/AbhinavSangisetti/Projects/roadmap/roadmap/obj/x86/Debug/roadmap.csproj.CoreCompileInputs.cache
+/Users/AbhinavSangisetti/Projects/roadmap/roadmap/obj/x86/Debug/roadmap.exe
+/Users/AbhinavSangisetti/Projects/roadmap/roadmap/obj/x86/Debug/roadmap.pdb
