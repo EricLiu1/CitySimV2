@@ -99,7 +99,7 @@ public class Edge
     private readonly Streamline _streamline;
     public Streamline Streamline { get { return _streamline; } }
 
-    private Edge(Streamline stream, Vertex a, Vertex b)
+    public Edge(Streamline stream, Vertex a, Vertex b)
     {
         _a = a;
         _b = b;

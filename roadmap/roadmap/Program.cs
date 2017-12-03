@@ -57,6 +57,7 @@ public class GtkCairo
         w.ShowAll();
 
         Gtk.Application.Run();
+
     }
 
 
@@ -67,7 +68,6 @@ public class CairoGraphic : DrawingArea
 
     static readonly double M_PI = 3.14159265358979323846;
     static Tensor t;
-    static bool p = false;
 
     static int width2 = 0;
     static int height2 = 0;
@@ -87,16 +87,17 @@ public class CairoGraphic : DrawingArea
         /* draw helping lines */
         gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
 
+        List<Edge> streamlines = CairoGraphic.test();
 
-        gr.LineTo(new PointD(0.5, 0.5));
-
-        List<PointD> streamlines = CairoGraphic.test();
         for (int i = 0; i < streamlines.Count; ++i)
         {
-            Console.WriteLine(streamlines[i].X + " " + streamlines[i].Y);
-            gr.LineTo(streamlines[i]);
+            Edge myedge = streamlines[i];
+            PointD start = new PointD(myedge.A.Position.X, myedge.A.Position.Y);
+            PointD end = new PointD(myedge.B.Position.X, myedge.B.Position.Y);
+            gr.LineTo(start);
+            gr.LineTo(end);
             gr.Stroke();
-            gr.LineTo(streamlines[i]);
+
         }
     }
 
@@ -127,13 +128,15 @@ public class CairoGraphic : DrawingArea
 
     }
 
-    public static List<PointD> test() 
+    public static List<Edge> test() 
     {
         var direction = new Vector2(0, 0);
-        var position = new PointD(0.5, 0.5);
+        var position = new Vector2((float)0.5, (float)0.5);
 
-        List<PointD> ans = new List<PointD>();
-        ans.Add(position);
+        List<Edge> ans = new List<Edge>();
+        Vertex current = new Vertex(position);
+        Streamline candidate = new Streamline(current);
+        
         t = Tensor.FromRTheta(2, M_PI);
 
 
@@ -150,9 +153,16 @@ public class CairoGraphic : DrawingArea
             direction = major;
             if (direction.Length() < 0.00005f)
                 break;
-            
-            position = new PointD(position.X + direction.X, position.Y + direction.Y);
-            ans.Add(position);
+
+            var temp = new Vector2(current.Position.X + direction.X / 100, current.Position.Y + direction.Y / 100);
+            Vertex next = new Vertex(temp);
+
+            Edge myedge = new Edge(candidate, current, next);
+            myedge.MakeEdge(current, next, candidate);
+            candidate.vertices.Add(current);
+            ans.Add(myedge);
+
+            current = next;
         }
 
         return ans;
@@ -169,15 +179,15 @@ public class CairoGraphic : DrawingArea
         int x, y, w, h, d;
         win.GetGeometry(out x, out y, out w, out h, out d);
 
-        if (!p)
+        if (w != width2 || height2 != h)
         {
             width2 = w;
             height2 = h;
             InitializeSeeds();
-            p = true;
         }
 
         draw(g, w, h);
+        g.Dispose();
         return true;
     }
 
