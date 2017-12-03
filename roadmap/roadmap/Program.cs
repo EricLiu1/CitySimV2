@@ -75,8 +75,10 @@ public class CairoGraphic : DrawingArea
     PictureBox terrainMap = new PictureBox();
     System.Drawing.Color[,] density;
     System.Drawing.Color[,] terrain;
+    public List<Tensor> weightedavgs = new List<Tensor>();
 
-    static void draw(Cairo.Context gr, int width, int height)
+
+    public void draw(Cairo.Context gr, int width, int height)
     {
         
 
@@ -87,13 +89,13 @@ public class CairoGraphic : DrawingArea
         /* draw helping lines */
         gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
 
-        List<Edge> streamlines = CairoGraphic.test();
+        List<Edge> streamlines = test();
 
         for (int i = 0; i < streamlines.Count; ++i)
         {
-            Edge myedge = streamlines[i];
-            PointD start = new PointD(myedge.A.Position.X, myedge.A.Position.Y);
-            PointD end = new PointD(myedge.B.Position.X, myedge.B.Position.Y);
+            Edge myedge2 = streamlines[i];
+            PointD start = new PointD(myedge2.A.Position.X, myedge2.A.Position.Y);
+            PointD end = new PointD(myedge2.B.Position.X, myedge2.B.Position.Y);
             gr.LineTo(start);
             gr.LineTo(end);
             gr.Stroke();
@@ -130,7 +132,7 @@ public class CairoGraphic : DrawingArea
         }
     }
 
-    public static List<Edge> test() 
+    public List<Edge> test() 
     {
         var direction = new Vector2(0, 0);
         var position = new Vector2((float)0.5, (float)0.5);
@@ -138,21 +140,28 @@ public class CairoGraphic : DrawingArea
         List<Edge> ans = new List<Edge>();
         Vertex current = new Vertex(position);
         Streamline candidate = new Streamline(current);
-        
-        t = Tensor.FromRTheta(2, M_PI);
 
+        weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
 
-        for (int i = 0; i < 100; ++i) {
-            
-            Vector2 coord = new Vector2( (float)position.X, (float)position.Y);
+        var mergedistance = 0.01;
 
-            //Tensor t = Tensor.FromXY(coord);
+        for (int i = 0; i < 100; ++i) 
+        {
             Vector2 major = new Vector2();
             Vector2 minor = new Vector2();
 
-            Random random = new Random();
+            t = new Tensor(0, 0, 0);
+
+            for (int j = 0; j < weightedavgs.Count; ++j) {
+                t = new Tensor(weightedavgs[j].Sample().X, weightedavgs[j].Sample().Y, 0) + t;
+            }
+
+            t = new Tensor(t.A / weightedavgs.Count, t.B / weightedavgs.Count, 0);
+
             t.EigenVectors(out major, out minor);
             direction = major;
+
+            //if segment is too small then don't create an edge
             if (direction.Length() < 0.00005f)
                 break;
 
@@ -164,7 +173,20 @@ public class CairoGraphic : DrawingArea
             candidate.vertices.Add(current);
             ans.Add(myedge);
 
+            //if segment is out of bounds then add an edge and finish
+            if(temp.X > 1.0 || temp.X < 0.0 || temp.Y > 1.0 || temp.Y < 0.0) 
+                break;
+            
             current = next;
+
+            for (int j = 0; j < weightedavgs.Count; ++j) 
+            {
+                //recalculate radial tensors
+                if(weightedavgs[j].type == 1) {
+                    weightedavgs.Remove(weightedavgs[j]);
+                    weightedavgs.Add(Tensor.FromXY(temp));
+                }
+            }
         }
 
         return ans;

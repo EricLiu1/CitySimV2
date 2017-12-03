@@ -11,43 +11,44 @@ public struct Tensor
 
     public readonly double A;
     public readonly double B;
-
-    public Tensor(double a, double b)
+    public readonly int type;
+    public Tensor(double a, double b, int kind)
     {
         A = a;
         B = b;
+        type = kind;
     }
 
     public static Tensor FromRTheta(double r, double theta)
     {
-        return new Tensor(r * Math.Cos(2 * theta), r * Math.Sin(2 * theta));
+        return new Tensor(r * Math.Cos(2 * theta), r * Math.Sin(2 * theta), 0);
     }
 
     public static Tensor FromXY(Vector2 xy)
     {
         var xy2 = -2 * xy.X * xy.Y;
         var diffSquares = xy.Y * xy.Y - xy.X * xy.X;
-        return Normalize(new Tensor(diffSquares, xy2));
+        return Normalize(new Tensor(diffSquares, xy2, 1));
     }
 
     public static Tensor Normalize(Tensor tensor)
     {
         var l = Math.Sqrt(tensor.A * tensor.A + tensor.B * tensor.B);
         if (Math.Abs(l) < float.Epsilon)
-            return new Tensor(0, 0);
+            return new Tensor(0, 0, tensor.type);
 
-        return new Tensor(tensor.A / l, tensor.B / l);
+        return new Tensor(tensor.A / l, tensor.B / l, tensor.type);
 
     }
 
     public static Tensor operator +(Tensor left, Tensor right)
     {
-        return new Tensor(left.A + right.A, left.B + right.B);
+        return new Tensor(left.A + right.A, left.B + right.B, right.type);
     }
 
     public static Tensor operator *(double left, Tensor right)
     {
-        return new Tensor(left * right.A, left * right.B);
+        return new Tensor(left * right.A, left * right.B, right.type);
     }
 
     //Eigen calculation based on http://www.math.harvard.edu/archive/21b_fall_04/exhibits/2dmatrices/index.html
@@ -58,7 +59,7 @@ public struct Tensor
         e1 = eval;
         e2 = -eval;
     }
-
+     
     public void EigenVectors(out Vector2 major, out Vector2 minor)
     {
         if (Math.Abs(B) < 0.0000001f)
@@ -82,6 +83,11 @@ public struct Tensor
             major = new Vector2((float)B, (float)(e1 - A));
             minor = new Vector2((float)B, (float)(e2 - A));
         }
+    }
+
+    public Vector2 Sample() 
+    {
+        return new Vector2((float)A, (float)B);
     }
 }
 
