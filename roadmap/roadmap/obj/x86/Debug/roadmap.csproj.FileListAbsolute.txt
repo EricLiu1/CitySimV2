@@ -10,3 +10,13 @@
 /Users/kevinzhang/citysim/CitySimV2/roadmap/roadmap/obj/x86/Debug/roadmap.pdb
 /Users/kevinzhang/citysim/CitySimV2/roadmap/roadmap/bin/Debug/roadmap.exe
 /Users/kevinzhang/citysim/CitySimV2/roadmap/roadmap/bin/Debug/roadmap.pdb
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/obj/x86/Debug/roadmap.csprojResolveAssemblyReference.cache
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/obj/x86/Debug/roadmap.csproj.CoreCompileInputs.cache
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/obj/x86/Debug/roadmap.exe
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/obj/x86/Debug/roadmap.pdb
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/roadmap.exe
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/roadmap.pdb
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/Tensor.cs
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/System.Numerics.dll
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/System.Numerics.Vectors.dll
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/System.Numerics.Vectors.xml

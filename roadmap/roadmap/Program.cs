@@ -101,33 +101,30 @@ public class CairoGraphic : DrawingArea
     }
 
     public void InitializeSeeds() {
-        boundaryMap.Image = System.Drawing.Image.FromFile("boundary_map.png");
-        boundaryMap.Size = new Size(width2, height2);
-        boundaryMap.Location = new System.Drawing.Point(0, 0);
-        density = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
+        //boundaryMap.Image = System.Drawing.Image.FromFile("boundary_map.png");
+        //boundaryMap.Size = new Size(width2, height2);
+        //boundaryMap.Location = new System.Drawing.Point(0, 0);
+        //density = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
 
-        for (int i = 0; i < boundaryMap.Width; ++i)
-        {
-            for (int j = 0; j < boundaryMap.Height; ++j)
-            {
-                density[i, j] = GetColorAt(i, j, boundaryMap);
-            }
-        }
+        //for (int i = 0; i < boundaryMap.Width; ++i)
+        //{
+        //    for (int j = 0; j < boundaryMap.Height; ++j)
+        //    {
+        //        density[i, j] = GetColorAt(i, j, boundaryMap);
+        //    }
+        //}
 
-        terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
-        terrainMap.Size = new Size(width2, height2);
-        terrainMap.Location = new System.Drawing.Point(0, 0);
-        terrain = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
+        //terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
+        //terrainMap.Size = new Size(width2, height2);
+        //terrainMap.Location = new System.Drawing.Point(0, 0);
+        //terrain = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
 
-        for (int i = 0; i < terrainMap.Width; ++i) {
-            for (int j = 0; j < terrainMap.Height; ++j) {
-                terrain[i, j] = GetColorAt(i, j, terrainMap);
-            }
-        }
+        //for (int i = 0; i < terrainMap.Width; ++i) {
+        //    for (int j = 0; j < terrainMap.Height; ++j) {
+        //        terrain[i, j] = GetColorAt(i, j, terrainMap);
+        //    }
+        //}
 
-    }
-    public void GenerateTensor() {
-        t = new Tensor(5, M_PI);
     }
 
     public static List<PointD> test() 
@@ -137,12 +134,14 @@ public class CairoGraphic : DrawingArea
 
         List<PointD> ans = new List<PointD>();
         ans.Add(position);
+        t = Tensor.FromRTheta(2, M_PI);
 
 
         for (int i = 0; i < 100; ++i) {
             
             Vector2 coord = new Vector2( (float)position.X, (float)position.Y);
-            Tensor t = Tensor.FromXY(coord);
+
+            //Tensor t = Tensor.FromXY(coord);
             Vector2 major = new Vector2();
             Vector2 minor = new Vector2();
 
