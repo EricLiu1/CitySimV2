@@ -71,7 +71,7 @@ public class CairoGraphic : DrawingArea
 
     static int width2 = 0;
     static int height2 = 0;
-    PictureBox boundaryMap = new PictureBox();
+    PictureBox densityMap = new PictureBox();
     PictureBox terrainMap = new PictureBox();
     System.Drawing.Color[,] density;
     System.Drawing.Color[,] terrain;
@@ -102,11 +102,11 @@ public class CairoGraphic : DrawingArea
     }
 
     public void InitializeSeeds() {
-        boundaryMap.Image = System.Drawing.Image.FromFile("boundary_map.png");
-        boundaryMap.Size = new Size(width2, height2);
-        boundaryMap.SizeMode = PictureBoxSizeMode.StretchImage;
-        boundaryMap.Location = new System.Drawing.Point(0, 0);
-        density = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
+        densityMap.Image = System.Drawing.Image.FromFile("density_map.png");
+        densityMap.Size = new Size(width2, height2);
+        densityMap.SizeMode = PictureBoxSizeMode.StretchImage;
+        densityMap.Location = new System.Drawing.Point(0, 0);
+        density = new System.Drawing.Color[densityMap.Width, densityMap.Height];
 
         terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
         terrainMap.Size = new Size(width2, height2);
@@ -114,15 +114,15 @@ public class CairoGraphic : DrawingArea
         terrainMap.Location = new System.Drawing.Point(0, 0);
         terrain = new System.Drawing.Color[terrainMap.Width, terrainMap.Height];
 
-        Bitmap img = (Bitmap)boundaryMap.Image;
+        Bitmap img = (Bitmap)densityMap.Image;
         Bitmap img2 = (Bitmap)terrainMap.Image;
-        float stretch_X = img.Width / (float)boundaryMap.Width;
-        float stretch_Y = img.Height / (float)boundaryMap.Height;
+        float stretch_X = img.Width / (float)densityMap.Width;
+        float stretch_Y = img.Height / (float)densityMap.Height;
         float stretch_X2 = img2.Width / (float)terrainMap.Width;
         float stretch_Y2 = img2.Height / (float)terrainMap.Height;
-        for (int i = 0; i < boundaryMap.Width; ++i)
+        for (int i = 0; i < densityMap.Width; ++i)
         {
-            for (int j = 0; j < boundaryMap.Height; ++j)
+            for (int j = 0; j < densityMap.Height; ++j)
             {
                 density[i, j] = img.GetPixel((int)(i * stretch_X), (int)(j * stretch_Y));
                 terrain[i, j] = img2.GetPixel((int)(i * stretch_X2), (int)(j * stretch_Y2)); 
