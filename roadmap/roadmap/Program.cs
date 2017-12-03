@@ -142,10 +142,11 @@ public class CairoGraphic : DrawingArea
         Streamline candidate = new Streamline(current);
 
         weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
+        weightedavgs.Add(Tensor.FromXY(position));
 
         var mergedistance = 0.01;
 
-        for (int i = 0; i < 100; ++i) 
+        for (int i = 0; i < 10000; ++i) 
         {
             Vector2 major = new Vector2();
             Vector2 minor = new Vector2();
@@ -166,6 +167,12 @@ public class CairoGraphic : DrawingArea
                 break;
 
             var temp = new Vector2(current.Position.X + direction.X / 100, current.Position.Y + direction.Y / 100);
+
+            //if segment ends in water then don't create an edge
+            //if (terrain[temp.X * width2, temp.Y * height2].B) {
+                
+            //}
+
             Vertex next = new Vertex(temp);
 
             Edge myedge = new Edge(candidate, current, next);
