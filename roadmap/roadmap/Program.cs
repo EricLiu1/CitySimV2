@@ -102,30 +102,32 @@ public class CairoGraphic : DrawingArea
     }
 
     public void InitializeSeeds() {
-        //boundaryMap.Image = System.Drawing.Image.FromFile("boundary_map.png");
-        //boundaryMap.Size = new Size(width2, height2);
-        //boundaryMap.Location = new System.Drawing.Point(0, 0);
-        //density = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
+        boundaryMap.Image = System.Drawing.Image.FromFile("boundary_map.png");
+        boundaryMap.Size = new Size(width2, height2);
+        boundaryMap.SizeMode = PictureBoxSizeMode.StretchImage;
+        boundaryMap.Location = new System.Drawing.Point(0, 0);
+        density = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
 
-        //for (int i = 0; i < boundaryMap.Width; ++i)
-        //{
-        //    for (int j = 0; j < boundaryMap.Height; ++j)
-        //    {
-        //        density[i, j] = GetColorAt(i, j, boundaryMap);
-        //    }
-        //}
+        terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
+        terrainMap.Size = new Size(width2, height2);
+        terrainMap.SizeMode = PictureBoxSizeMode.StretchImage;
+        terrainMap.Location = new System.Drawing.Point(0, 0);
+        terrain = new System.Drawing.Color[terrainMap.Width, terrainMap.Height];
 
-        //terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
-        //terrainMap.Size = new Size(width2, height2);
-        //terrainMap.Location = new System.Drawing.Point(0, 0);
-        //terrain = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
-
-        //for (int i = 0; i < terrainMap.Width; ++i) {
-        //    for (int j = 0; j < terrainMap.Height; ++j) {
-        //        terrain[i, j] = GetColorAt(i, j, terrainMap);
-        //    }
-        //}
-
+        Bitmap img = (Bitmap)boundaryMap.Image;
+        Bitmap img2 = (Bitmap)terrainMap.Image;
+        float stretch_X = img.Width / (float)boundaryMap.Width;
+        float stretch_Y = img.Height / (float)boundaryMap.Height;
+        float stretch_X2 = img2.Width / (float)terrainMap.Width;
+        float stretch_Y2 = img2.Height / (float)terrainMap.Height;
+        for (int i = 0; i < boundaryMap.Width; ++i)
+        {
+            for (int j = 0; j < boundaryMap.Height; ++j)
+            {
+                density[i, j] = img.GetPixel((int)(i * stretch_X), (int)(j * stretch_Y));
+                terrain[i, j] = img2.GetPixel((int)(i * stretch_X2), (int)(j * stretch_Y2)); 
+            }
+        }
     }
 
     public static List<Edge> test() 
@@ -191,8 +193,4 @@ public class CairoGraphic : DrawingArea
         return true;
     }
 
-    public System.Drawing.Color GetColorAt(int x, int y, PictureBox p)
-    {
-        return ((Bitmap)p.Image).GetPixel(x, y);
-    }
 }
