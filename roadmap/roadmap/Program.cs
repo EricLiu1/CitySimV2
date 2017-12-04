@@ -100,7 +100,8 @@ public class CairoGraphic : DrawingArea
         }
     }
 
-    public void InitializeSeeds() {
+    public void InitializeSeeds()
+    {
         //boundaryMap.Image = System.Drawing.Image.FromFile("boundary_map.png");
         //boundaryMap.Size = new Size(width2, height2);
         //boundaryMap.Location = new System.Drawing.Point(0, 0);
@@ -147,7 +148,7 @@ public class CairoGraphic : DrawingArea
 
             Random random = new Random();
             t.EigenVectors(out major, out minor);
-            direction = major;
+            direction = major * .01f;
             if (direction.Length() < 0.00005f)
                 break;
             

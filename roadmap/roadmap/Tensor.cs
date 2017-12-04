@@ -142,3 +142,20 @@ public class Streamline {
         vertices.Add(v1);
     }
 }
+
+public struct Seed
+{
+    public Vector2 pos;
+    public Vector2 field;
+    public Vector2 alt_field;
+    public int priority;
+
+    public Seed (Vector2 start, Vector2 main, Vector2 alt, int pri){
+        pos = start;
+        field = main;
+        alt_field = alt;
+        priority = pri;
+    }
+
+}
+    

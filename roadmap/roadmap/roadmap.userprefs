@@ -1,8 +1,9 @@
 ﻿<Properties StartupConfiguration="{A111CD87-6AA0-4E52-B24B-5A825205136D}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Tensor.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="EmptyClass.cs">
     <Files>
-      <File FileName="Program.cs" Line="86" Column="2" />
-      <File FileName="Tensor.cs" Line="117" Column="12" />
+      <File FileName="Program.cs" Line="174" Column="10" />
+      <File FileName="Tensor.cs" Line="141" Column="9" />
+      <File FileName="EmptyClass.cs" Line="3" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -11,7 +12,7 @@
             <Node name="roadmap" expanded="True">
               <Node name="References" expanded="True" />
               <Node name="Properties" expanded="True" />
-              <Node name="Tensor.cs" selected="True" />
+              <Node name="EmptyClass.cs" selected="True" />
             </Node>
           </Node>
         </State>
