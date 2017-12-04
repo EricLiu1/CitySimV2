@@ -189,15 +189,34 @@ public class CairoGraphic : DrawingArea
         }
     }
 
+    public Vector2 Rk4_sample_field(Vector2 point, Vector2 prev_dir, Tensor t)
+    {
+        Vector2 major, minor;
+
+        t.Sample(point, prev_dir).EigenVectors(out major, out minor);
+        var k1 = major;
+
+        t.Sample(point + k1 / 2f, prev_dir).EigenVectors(out major, out minor);
+        var k2 = major;
+
+        t.Sample(point + k2 / 2f, prev_dir).EigenVectors(out major, out minor);
+        var k3 = major;
+
+        t.Sample(point + k3, prev_dir).EigenVectors(out major, out minor);
+        var k4 = major;
+
+        return k1 / 6f + k2 / 3f + k3 / 3f + k4 / 6f;
+    }
+
     public List<Edge> test() 
     {
         var direction = new Vector2(0, 0);
         var position = new Vector2((float)1.0, (float)0.1);
         var position2 = new Vector2((float)0.7, (float)0.7);
-        var position3 = new Vector2((float)0.8, (float)0.8);
+        var position3 = new Vector2((float)0.6, (float)0.6);
         List<Vector2> seeds = new List<Vector2>();
         //seeds.Add(position);
-        seeds.Add(position2);
+        //seeds.Add(position2);
         seeds.Add(position3);
 
         List<Edge> ans = new List<Edge>();
@@ -205,16 +224,16 @@ public class CairoGraphic : DrawingArea
         //Streamline candidate = new Streamline(current);
 
         //gridline tensors
-        weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
-        weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI));
-
+        //weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
+        //weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI));
+        Vector2 prev_direction = Vector2.Zero;
         //var mergedistance = 0.01;
         for (int _ = 0; _ < seeds.Count; ++_)
         {
             Vertex current = new Vertex(seeds[_]);
 
             //radial tensors
-            Vector2 center = new Vector2(0.2f, 0.2f);
+            Vector2 center = new Vector2(0.5f, 0.5f);
             //Vector2 center2 = new Vector2(0.2f, 0.9f);
             //Vector2 center3 = new Vector2(0.7f, 0.3f);
 
@@ -226,8 +245,8 @@ public class CairoGraphic : DrawingArea
 
             for (int i = 0; i < 10000; ++i)
             {
-                Vector2 major = new Vector2();
-                Vector2 minor = new Vector2();
+                //Vector2 major = new Vector2();
+                //Vector2 minor = new Vector2();
 
                 t = new Tensor(0, 0, 0, new Vector2());
 
@@ -236,10 +255,12 @@ public class CairoGraphic : DrawingArea
                     t = new Tensor(weightedavgs[j].A, weightedavgs[j].B, 0, new Vector2()) + t;
                 }
 
-                t = new Tensor(t.A / weightedavgs.Count, t.B / weightedavgs.Count, 0, new Vector2());
+                t = new Tensor(t.A / weightedavgs.Count, t.B / weightedavgs.Count, 1, new Vector2());
 
-                t.EigenVectors(out major, out minor);
-                direction = major;
+                //t.EigenVectors(out major, out minor);
+
+                //direction = major;
+                direction = Rk4_sample_field(current.Position, prev_direction, t);
 
                 //if segment is too small then don't create an edge
                 if (direction.Length() < 0.000005f)
@@ -296,6 +317,8 @@ public class CairoGraphic : DrawingArea
                     }
                 }
             }
+
+            prev_direction = direction;
 
         }
 

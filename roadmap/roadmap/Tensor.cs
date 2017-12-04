@@ -96,8 +96,9 @@ public struct Tensor
         return new Vector2((float)A, (float)B);
     }
 
-    public Vector2 Sample(Vector2 pos) 
+    public Tensor Sample(Vector2 pos, Vector2 prev_dir) 
     {
+        Vector2 v = Vector2.Zero;
         if(type == 1) {
             Vector2 xy = pos - center2;
             xy *= 1000;
@@ -108,11 +109,18 @@ public struct Tensor
             var l = Math.Sqrt(diffSquares * diffSquares + xy2 * xy2);
 
             if (Math.Abs(l) < float.Epsilon)
-                return new Vector2(0, 0);
-
-            return new Vector2((float)(diffSquares / l), (float)(xy2 / l));
+                v = Vector2.Zero;
+            else
+                v = new Vector2((float)(diffSquares / l), (float)(xy2 / l));
         }
-        return new Vector2(0, 0);
+
+        if (prev_dir == Vector2.Zero || Vector2.Dot(prev_dir, v) >= 0)
+            return new Tensor(v.X, v.Y, 1, center2);
+
+        //  Since we didn't return one of the cases above, reverse the direction
+        return new Tensor(-v.X, -v.Y, 1, center2);;
+
+        //return new Vector2(0, 0);
     }
 }
 
