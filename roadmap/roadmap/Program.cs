@@ -83,33 +83,60 @@ public class CairoGraphic : DrawingArea
     {
         //if dimensions are changed redraw the terrain map
         if(changed) {
-            Console.WriteLine("here");
             changed = false;
             gr.Scale(width, height);
 
             gr.LineWidth = 0.005;
-            //for (double i = 0; i < width; ++i) 
-            //{
-            //    gr.SetSourceColor(new Cairo.Color(0, 0, 0, 1));
-            //    PointD start2 = new PointD((double)(i / width), 0);
-            //    gr.LineTo(start2);
+            for (double i = 0; i < width; ++i) 
+            {
+                int k = (int)i;
+                bool water = false;
 
-            //    PointD end2 = new PointD((double)(i / width), (double)(1/height));
-            //    for (double j = 1; j < height; ++j) 
-            //    {
-            //        //if (terrain[i, j].GetHue() > 60.0f)
-            //        //{
+                //normal colors
+                double myR = 0.9;
+                double myG = 0.9;
+                double myB = 0.9;
 
-            //        //}
-            //        //else
-            //        //{
-            //            end2.Y = (double)((double)j / (double)height);
-            //        //}
-            //    }
-            //    Console.WriteLine("wa" + end2.X + " " + end2.Y);
-            //    gr.LineTo(end2);
-            //    gr.Stroke();
-            //}
+                //water colors
+                double myR2 = 0.8;
+                double myG2 = 0.8;
+                double myB2 = 1.0;
+                gr.SetSourceColor(new Cairo.Color(myR, myG, myB, 1));
+                PointD start2 = new PointD(i/width, 0);
+                gr.LineTo(start2);
+
+                PointD end2 = new PointD(i/width, 1/height);
+                for (double j = 1; j < height; ++j) 
+                {
+                    if (terrain[(int)i, (int)j].GetHue() > 60.0f && !water)
+                    {
+                        gr.LineTo(end2);
+                        gr.Stroke();
+
+                        gr.SetSourceColor(new Cairo.Color(myR2, myG2, myB2, 1));
+                        start2.Y = j / height;
+                        gr.LineTo(start2);
+                        end2.Y = j / height;
+                        water = true;
+                    }
+                    else if(terrain[(int)i, (int)j].GetHue() < 60.0f && water) {
+                        gr.LineTo(end2);
+                        gr.Stroke();
+
+                        gr.SetSourceColor(new Cairo.Color(myR, myG, myB, 1));
+                        start2.Y = j / height;
+                        gr.LineTo(start2);
+                        end2.Y = j / height;
+                        water = false;
+                    }
+                    else
+                    {
+                        end2.Y = j / height;
+                    }
+                }
+                gr.LineTo(end2);
+                gr.Stroke();
+            }
 
         }
 
@@ -169,24 +196,31 @@ public class CairoGraphic : DrawingArea
         var position2 = new Vector2((float)0.7, (float)0.7);
         var position3 = new Vector2((float)0.8, (float)0.8);
         List<Vector2> seeds = new List<Vector2>();
-        seeds.Add(position);
+        //seeds.Add(position);
         seeds.Add(position2);
-        seeds.Add(position3);
+        //seeds.Add(position3);
 
         List<Edge> ans = new List<Edge>();
         //Vertex current = new Vertex(position);
         //Streamline candidate = new Streamline(current);
 
-        weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
-        weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI));
+        //gridline tensrs
+        //weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
+        //weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI));
 
         //var mergedistance = 0.01;
         for (int _ = 0; _ < seeds.Count; ++_)
         {
-            Console.WriteLine("asdf");
             Vertex current = new Vertex(seeds[_]);
 
-            weightedavgs.Add(Tensor.FromXY(seeds[_]));
+            //radial tensors
+            Vector2 center = new Vector2(0.5f, 0.5f);
+            //Vector2 center2 = new Vector2(0.2f, 0.9f);
+            //Vector2 center3 = new Vector2(0.7f, 0.3f);
+
+            weightedavgs.Add(Tensor.FromXY(seeds[_], center));
+            //weightedavgs.Add(Tensor.FromXY(seeds[_], center2));
+            //weightedavgs.Add(Tensor.FromXY(seeds[_], center3));
 
             Streamline candidate = new Streamline(current);
 
@@ -195,21 +229,25 @@ public class CairoGraphic : DrawingArea
                 Vector2 major = new Vector2();
                 Vector2 minor = new Vector2();
 
-                t = new Tensor(0, 0, 0);
+                t = new Tensor(0, 0, 0, new Vector2());
 
                 for (int j = 0; j < weightedavgs.Count; ++j)
                 {
-                    t = new Tensor(weightedavgs[j].Sample().X, weightedavgs[j].Sample().Y, 0) + t;
+                    t = new Tensor(weightedavgs[j].Sample().X, weightedavgs[j].Sample().Y, 0, new Vector2()) + t;
                 }
 
-                t = new Tensor(t.A / weightedavgs.Count, t.B / weightedavgs.Count, 0);
+                t = new Tensor(t.A / weightedavgs.Count, t.B / weightedavgs.Count, 0, new Vector2());
 
                 t.EigenVectors(out major, out minor);
                 direction = major;
 
                 //if segment is too small then don't create an edge
-                if (direction.Length() < 0.00005f)
+                if (direction.Length() < 0.000005f)
+                {
+                    Console.WriteLine(direction.X + " " + direction.Y);
+                    Console.WriteLine("hit deadzone");
                     break;
+                }
 
                 var temp = new Vector2(current.Position.X + direction.X / 100, current.Position.Y + direction.Y / 100);
 
@@ -227,6 +265,7 @@ public class CairoGraphic : DrawingArea
                 
                 if (terrain[x, y].GetHue() > 60.0f)
                 {
+                    Console.WriteLine("hit water");
                     break;
                 }
 
@@ -248,8 +287,9 @@ public class CairoGraphic : DrawingArea
                     //recalculate radial tensors
                     if (weightedavgs[j].type == 1)
                     {
+                        Vector2 tensor_center = weightedavgs[j].center2;
                         weightedavgs.Remove(weightedavgs[j]);
-                        weightedavgs.Add(Tensor.FromXY(temp));
+                        weightedavgs.Add(Tensor.FromXY(temp, tensor_center));
                     }
                 }
             }

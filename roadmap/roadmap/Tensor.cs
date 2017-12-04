@@ -12,43 +12,49 @@ public struct Tensor
     public readonly double A;
     public readonly double B;
     public readonly int type;
-    public Tensor(double a, double b, int kind)
+    public Vector2 center2;
+
+    public Tensor(double a, double b, int kind, Vector2 center)
     {
         A = a;
         B = b;
         type = kind;
+        center2 = center;
     }
 
     public static Tensor FromRTheta(double r, double theta)
     {
-        return new Tensor(r * Math.Cos(2 * theta), r * Math.Sin(2 * theta), 0);
+        return new Tensor(r * Math.Cos(2 * theta), r * Math.Sin(2 * theta), 0, new Vector2());
     }
 
-    public static Tensor FromXY(Vector2 xy)
+    public static Tensor FromXY(Vector2 pos, Vector2 center)
     {
+        Vector2 xy = pos - center;
+        xy *= 1000;
+        //Console.WriteLine(xy.X + " " + xy.Y);
         var xy2 = -2 * xy.X * xy.Y;
         var diffSquares = xy.Y * xy.Y - xy.X * xy.X;
-        return Normalize(new Tensor(diffSquares, xy2, 1));
+        return Normalize(new Tensor(diffSquares, xy2, 1, center));
     }
 
     public static Tensor Normalize(Tensor tensor)
     {
         var l = Math.Sqrt(tensor.A * tensor.A + tensor.B * tensor.B);
         if (Math.Abs(l) < float.Epsilon)
-            return new Tensor(0, 0, tensor.type);
+            return new Tensor(0, 0, tensor.type, tensor.center2);
 
-        return new Tensor(tensor.A / l, tensor.B / l, tensor.type);
+        return new Tensor(tensor.A / l, tensor.B / l, tensor.type, tensor.center2);
 
     }
 
     public static Tensor operator +(Tensor left, Tensor right)
     {
-        return new Tensor(left.A + right.A, left.B + right.B, right.type);
+        return new Tensor(left.A + right.A, left.B + right.B, right.type, right.center2);
     }
 
     public static Tensor operator *(double left, Tensor right)
     {
-        return new Tensor(left * right.A, left * right.B, right.type);
+        return new Tensor(left * right.A, left * right.B, right.type, right.center2);
     }
 
     //Eigen calculation based on http://www.math.harvard.edu/archive/21b_fall_04/exhibits/2dmatrices/index.html
