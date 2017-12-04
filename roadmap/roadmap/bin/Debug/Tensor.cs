@@ -91,9 +91,28 @@ public struct Tensor
         }
     }
 
-    public Vector2 Sample() 
+    public Vector2 Sample()
     {
         return new Vector2((float)A, (float)B);
+    }
+
+    public Vector2 Sample(Vector2 pos) 
+    {
+        if(type == 1) {
+            Vector2 xy = pos - center2;
+            xy *= 1000;
+            //Console.WriteLine(xy.X + " " + xy.Y);
+            var xy2 = -2 * xy.X * xy.Y;
+            var diffSquares = xy.Y * xy.Y - xy.X * xy.X;
+
+            var l = Math.Sqrt(diffSquares * diffSquares + xy2 * xy2);
+
+            if (Math.Abs(l) < float.Epsilon)
+                return new Vector2(0, 0);
+
+            return new Vector2((float)(diffSquares / l), (float)(xy2 / l));
+        }
+        return new Vector2(0, 0);
     }
 }
 

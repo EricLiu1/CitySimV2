@@ -198,15 +198,15 @@ public class CairoGraphic : DrawingArea
         List<Vector2> seeds = new List<Vector2>();
         //seeds.Add(position);
         seeds.Add(position2);
-        //seeds.Add(position3);
+        seeds.Add(position3);
 
         List<Edge> ans = new List<Edge>();
         //Vertex current = new Vertex(position);
         //Streamline candidate = new Streamline(current);
 
-        //gridline tensrs
-        //weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
-        //weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI));
+        //gridline tensors
+        weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
+        weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI));
 
         //var mergedistance = 0.01;
         for (int _ = 0; _ < seeds.Count; ++_)
@@ -214,7 +214,7 @@ public class CairoGraphic : DrawingArea
             Vertex current = new Vertex(seeds[_]);
 
             //radial tensors
-            Vector2 center = new Vector2(0.5f, 0.5f);
+            Vector2 center = new Vector2(0.2f, 0.2f);
             //Vector2 center2 = new Vector2(0.2f, 0.9f);
             //Vector2 center3 = new Vector2(0.7f, 0.3f);
 
@@ -233,7 +233,7 @@ public class CairoGraphic : DrawingArea
 
                 for (int j = 0; j < weightedavgs.Count; ++j)
                 {
-                    t = new Tensor(weightedavgs[j].Sample().X, weightedavgs[j].Sample().Y, 0, new Vector2()) + t;
+                    t = new Tensor(weightedavgs[j].A, weightedavgs[j].B, 0, new Vector2()) + t;
                 }
 
                 t = new Tensor(t.A / weightedavgs.Count, t.B / weightedavgs.Count, 0, new Vector2());
@@ -244,8 +244,11 @@ public class CairoGraphic : DrawingArea
                 //if segment is too small then don't create an edge
                 if (direction.Length() < 0.000005f)
                 {
-                    Console.WriteLine(direction.X + " " + direction.Y);
+                    //Console.WriteLine(direction.X + " " + direction.Y);
                     Console.WriteLine("hit deadzone");
+                    //direction = -direction;
+                    //direction.Y -= 0.01f;
+                    //direction.X += 0.01f;
                     break;
                 }
 
