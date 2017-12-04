@@ -11,7 +11,7 @@ public struct Tensor
 
     public readonly double A;
     public readonly double B;
-    public readonly int type;
+    public int type;
     public Vector2 center2;
 
     public Tensor(double a, double b, int kind, Vector2 center)
@@ -22,15 +22,15 @@ public struct Tensor
         center2 = center;
     }
 
-    public static Tensor FromRTheta(double r, double theta)
+    public static Tensor FromRTheta(double r, double theta, Vector2 center)
     {
-        return new Tensor(r * Math.Cos(2 * theta), r * Math.Sin(2 * theta), 0, new Vector2());
+        return Normalize(new Tensor(r * Math.Cos(2 * theta), r * Math.Sin(2 * theta), 0, center));
     }
 
     public static Tensor FromXY(Vector2 pos, Vector2 center)
     {
         Vector2 xy = pos - center;
-        xy *= 1000;
+        //xy *= 1000;
         //Console.WriteLine(xy.X + " " + xy.Y);
         var xy2 = -2 * xy.X * xy.Y;
         var diffSquares = xy.Y * xy.Y - xy.X * xy.X;
@@ -50,6 +50,11 @@ public struct Tensor
     public static Tensor operator +(Tensor left, Tensor right)
     {
         return new Tensor(left.A + right.A, left.B + right.B, right.type, right.center2);
+    }
+
+    public static Tensor operator -(Tensor t)
+    {
+        return new Tensor(-t.A, -t.B, t.type, t.center2);
     }
 
     public static Tensor operator *(double left, Tensor right)
@@ -96,31 +101,60 @@ public struct Tensor
         return new Vector2((float)A, (float)B);
     }
 
-    public Tensor Sample(Vector2 pos, Vector2 prev_dir) 
+    public static Tensor Sample(Vector2 pos, Vector2 prev_dir, List<Tensor> weightedavgs) 
     {
-        Vector2 v = Vector2.Zero;
-        if(type == 1) {
-            Vector2 xy = pos - center2;
-            xy *= 1000;
-            //Console.WriteLine(xy.X + " " + xy.Y);
-            var xy2 = -2 * xy.X * xy.Y;
-            var diffSquares = xy.Y * xy.Y - xy.X * xy.X;
+        Tensor t = new Tensor();
+        double dist = 0;
+        Console.WriteLine(weightedavgs.Count);
 
-            var l = Math.Sqrt(diffSquares * diffSquares + xy2 * xy2);
+        for (int j = 0; j < weightedavgs.Count; ++j)
+        {
+            Vector2 major, minor;
+            Vector2 dif = new Vector2(weightedavgs[j].center2.X - pos.X, weightedavgs[j].center2.Y - pos.Y);
+            dist = Math.Sqrt(dif.X * dif.X + dif.Y * dif.Y);
+            if (weightedavgs[j].type == 0)
+            {
+                weightedavgs[j].EigenVectors(out major, out minor);
+                if (prev_dir == Vector2.Zero || Vector2.Dot(prev_dir, major) >= 0)
+                    t += (1 - dist) * weightedavgs[j];
 
-            if (Math.Abs(l) < float.Epsilon)
-                v = Vector2.Zero;
-            else
-                v = new Vector2((float)(diffSquares / l), (float)(xy2 / l));
+                //  Since we didn't return one of the cases above, reverse the direction
+                else
+                    t += (1 - dist) * -weightedavgs[j];
+            }
+            else if (weightedavgs[j].type == 1)
+            {
+                Tensor x;
+                Vector2 v = Vector2.Zero;
+                Vector2 xy = pos - weightedavgs[j].center2;
+                //xy *= 1000;
+                //Console.WriteLine(xy.X + " " + xy.Y);
+                var xy2 = -2 * xy.X * xy.Y;
+                var diffSquares = xy.Y * xy.Y - xy.X * xy.X;
+
+                var l = Math.Sqrt(diffSquares * diffSquares + xy2 * xy2);
+
+                if (Math.Abs(l) < float.Epsilon)
+                {
+                    x = new Tensor();
+                    x.EigenVectors(out major, out minor);
+                    v = major;
+                }
+                else
+                {
+                    x = Normalize(new Tensor((float)(diffSquares / l), (float)(xy2 / l), 1, weightedavgs[j].center2));
+                    x.EigenVectors(out major, out minor);
+                    v = major;
+                }
+
+
+                if (prev_dir == Vector2.Zero || Vector2.Dot(prev_dir, major) >= 0)
+                    t += (1 - dist) * x;
+                else
+                    t += (1 - dist) * -x;
+            }
         }
-
-        if (prev_dir == Vector2.Zero || Vector2.Dot(prev_dir, v) >= 0)
-            return new Tensor(v.X, v.Y, 1, center2);
-
-        //  Since we didn't return one of the cases above, reverse the direction
-        return new Tensor(-v.X, -v.Y, 1, center2);;
-
-        //return new Vector2(0, 0);
+        return t;
     }
 }
 
