@@ -71,6 +71,7 @@ public class CairoGraphic : DrawingArea
 
     static int width2 = 0;
     static int height2 = 0;
+    bool changed = true;
     PictureBox densityMap = new PictureBox();
     PictureBox terrainMap = new PictureBox();
     System.Drawing.Color[,] density;
@@ -80,17 +81,45 @@ public class CairoGraphic : DrawingArea
 
     public void draw(Cairo.Context gr, int width, int height)
     {
-        
+        //if dimensions are changed redraw the terrain map
+        if(changed) {
+            Console.WriteLine("here");
+            changed = false;
+            gr.Scale(width, height);
 
+            gr.LineWidth = 0.005;
+            //for (double i = 0; i < width; ++i) 
+            //{
+            //    gr.SetSourceColor(new Cairo.Color(0, 0, 0, 1));
+            //    PointD start2 = new PointD((double)(i / width), 0);
+            //    gr.LineTo(start2);
 
-        gr.Scale(width, height);
-        gr.LineWidth = 0.01;
- 
+            //    PointD end2 = new PointD((double)(i / width), (double)(1/height));
+            //    for (double j = 1; j < height; ++j) 
+            //    {
+            //        //if (terrain[i, j].GetHue() > 60.0f)
+            //        //{
+
+            //        //}
+            //        //else
+            //        //{
+            //            end2.Y = (double)((double)j / (double)height);
+            //        //}
+            //    }
+            //    Console.WriteLine("wa" + end2.X + " " + end2.Y);
+            //    gr.LineTo(end2);
+            //    gr.Stroke();
+            //}
+
+        }
+
+        gr.LineWidth = 0.005;
+
         /* draw helping lines */
         gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
 
         List<Edge> streamlines = test();
-
+        //Console.WriteLine(streamlines.Count);
         for (int i = 0; i < streamlines.Count; ++i)
         {
             Edge myedge2 = streamlines[i];
@@ -122,12 +151,13 @@ public class CairoGraphic : DrawingArea
         float stretch_Y = img.Height / (float)densityMap.Height;
         float stretch_X2 = img2.Width / (float)terrainMap.Width;
         float stretch_Y2 = img2.Height / (float)terrainMap.Height;
+
         for (int i = 0; i < densityMap.Width; ++i)
         {
             for (int j = 0; j < densityMap.Height; ++j)
             {
                 density[i, j] = img.GetPixel((int)(i * stretch_X), (int)(j * stretch_Y));
-                terrain[i, j] = img2.GetPixel((int)(i * stretch_X2), (int)(j * stretch_Y2)); 
+                terrain[i, j] = img2.GetPixel((int)(i * stretch_X2), (int)(j * stretch_Y2));
             }
         }
     }
@@ -135,65 +165,95 @@ public class CairoGraphic : DrawingArea
     public List<Edge> test() 
     {
         var direction = new Vector2(0, 0);
-        var position = new Vector2((float)0.5, (float)0.5);
+        var position = new Vector2((float)1.0, (float)0.1);
+        var position2 = new Vector2((float)0.7, (float)0.7);
+        var position3 = new Vector2((float)0.8, (float)0.8);
+        List<Vector2> seeds = new List<Vector2>();
+        seeds.Add(position);
+        seeds.Add(position2);
+        seeds.Add(position3);
 
         List<Edge> ans = new List<Edge>();
-        Vertex current = new Vertex(position);
-        Streamline candidate = new Streamline(current);
+        //Vertex current = new Vertex(position);
+        //Streamline candidate = new Streamline(current);
 
         weightedavgs.Add(Tensor.FromRTheta(2, M_PI));
-        weightedavgs.Add(Tensor.FromXY(position));
+        weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI));
 
-        var mergedistance = 0.01;
-
-        for (int i = 0; i < 10000; ++i) 
+        //var mergedistance = 0.01;
+        for (int _ = 0; _ < seeds.Count; ++_)
         {
-            Vector2 major = new Vector2();
-            Vector2 minor = new Vector2();
+            Console.WriteLine("asdf");
+            Vertex current = new Vertex(seeds[_]);
 
-            t = new Tensor(0, 0, 0);
+            weightedavgs.Add(Tensor.FromXY(seeds[_]));
 
-            for (int j = 0; j < weightedavgs.Count; ++j) {
-                t = new Tensor(weightedavgs[j].Sample().X, weightedavgs[j].Sample().Y, 0) + t;
-            }
+            Streamline candidate = new Streamline(current);
 
-            t = new Tensor(t.A / weightedavgs.Count, t.B / weightedavgs.Count, 0);
-
-            t.EigenVectors(out major, out minor);
-            direction = major;
-
-            //if segment is too small then don't create an edge
-            if (direction.Length() < 0.00005f)
-                break;
-
-            var temp = new Vector2(current.Position.X + direction.X / 100, current.Position.Y + direction.Y / 100);
-
-            //if segment ends in water then don't create an edge
-            //if (terrain[temp.X * width2, temp.Y * height2].B) {
-                
-            //}
-
-            Vertex next = new Vertex(temp);
-
-            Edge myedge = new Edge(candidate, current, next);
-            myedge.MakeEdge(current, next, candidate);
-            candidate.vertices.Add(current);
-            ans.Add(myedge);
-
-            //if segment is out of bounds then add an edge and finish
-            if(temp.X > 1.0 || temp.X < 0.0 || temp.Y > 1.0 || temp.Y < 0.0) 
-                break;
-            
-            current = next;
-
-            for (int j = 0; j < weightedavgs.Count; ++j) 
+            for (int i = 0; i < 10000; ++i)
             {
-                //recalculate radial tensors
-                if(weightedavgs[j].type == 1) {
-                    weightedavgs.Remove(weightedavgs[j]);
-                    weightedavgs.Add(Tensor.FromXY(temp));
+                Vector2 major = new Vector2();
+                Vector2 minor = new Vector2();
+
+                t = new Tensor(0, 0, 0);
+
+                for (int j = 0; j < weightedavgs.Count; ++j)
+                {
+                    t = new Tensor(weightedavgs[j].Sample().X, weightedavgs[j].Sample().Y, 0) + t;
+                }
+
+                t = new Tensor(t.A / weightedavgs.Count, t.B / weightedavgs.Count, 0);
+
+                t.EigenVectors(out major, out minor);
+                direction = major;
+
+                //if segment is too small then don't create an edge
+                if (direction.Length() < 0.00005f)
+                    break;
+
+                var temp = new Vector2(current.Position.X + direction.X / 100, current.Position.Y + direction.Y / 100);
+
+                //if segment ends in water then don't create an edge
+                int x = (int)(temp.X * width2);
+                int y = (int)(temp.Y * height2);
+                if (x >= width2)
+                    x = width2 - 1;
+                if (x < 0)
+                    x = 0;
+                if (y >= height2)
+                    y = height2 - 1;
+                if (y < 0)
+                    y = 0;
+                
+                if (terrain[x, y].GetHue() > 60.0f)
+                {
+                    break;
+                }
+
+                Vertex next = new Vertex(temp);
+
+                Edge myedge = new Edge(candidate, current, next);
+                myedge.MakeEdge(current, next, candidate);
+                candidate.vertices.Add(current);
+                ans.Add(myedge);
+
+                //if segment is out of bounds then add an edge and finish
+                if (temp.X > 1.0 || temp.X < 0.0 || temp.Y > 1.0 || temp.Y < 0.0)
+                    break;
+
+                current = next;
+
+                for (int j = 0; j < weightedavgs.Count; ++j)
+                {
+                    //recalculate radial tensors
+                    if (weightedavgs[j].type == 1)
+                    {
+                        weightedavgs.Remove(weightedavgs[j]);
+                        weightedavgs.Add(Tensor.FromXY(temp));
+                    }
                 }
             }
+
         }
 
         return ans;
@@ -215,6 +275,7 @@ public class CairoGraphic : DrawingArea
             width2 = w;
             height2 = h;
             InitializeSeeds();
+            changed = true;
         }
 
         draw(g, w, h);
