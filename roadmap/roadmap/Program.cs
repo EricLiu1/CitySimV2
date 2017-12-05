@@ -77,6 +77,7 @@ public class CairoGraphic : DrawingArea
     System.Drawing.Color[,] density;
     System.Drawing.Color[,] terrain;
     public List<Tensor> weightedavgs = new List<Tensor>();
+    public List<Vector2> water_bounds;
 
 
     public void draw(Cairo.Context gr, int width, int height)
@@ -92,16 +93,11 @@ public class CairoGraphic : DrawingArea
                 int k = (int)i;
                 bool water = false;
 
-                //normal colors
-                double myR = 0.9;
-                double myG = 0.9;
-                double myB = 0.9;
+                //normal color
+                Cairo.Color normal_color = new Cairo.Color(0.9, 0.9, 0.9, 1);
+                Cairo.Color water_color = new Cairo.Color(0.8, 0.8, 1.0, 1);
 
-                //water colors
-                double myR2 = 0.8;
-                double myG2 = 0.8;
-                double myB2 = 1.0;
-                gr.SetSourceColor(new Cairo.Color(myR, myG, myB, 1));
+                gr.SetSourceColor(normal_color);
                 PointD start2 = new PointD(i/width, 0);
                 gr.LineTo(start2);
 
@@ -113,7 +109,7 @@ public class CairoGraphic : DrawingArea
                         gr.LineTo(end2);
                         gr.Stroke();
 
-                        gr.SetSourceColor(new Cairo.Color(myR2, myG2, myB2, 1));
+                        gr.SetSourceColor(water_color);
                         start2.Y = j / height;
                         gr.LineTo(start2);
                         end2.Y = j / height;
@@ -123,7 +119,7 @@ public class CairoGraphic : DrawingArea
                         gr.LineTo(end2);
                         gr.Stroke();
 
-                        gr.SetSourceColor(new Cairo.Color(myR, myG, myB, 1));
+                        gr.SetSourceColor(normal_color);
                         start2.Y = j / height;
                         gr.LineTo(start2);
                         end2.Y = j / height;
@@ -138,6 +134,7 @@ public class CairoGraphic : DrawingArea
                 gr.Stroke();
             }
 
+            find_water();
         }
 
         gr.LineWidth = 0.005;
@@ -159,6 +156,44 @@ public class CairoGraphic : DrawingArea
         }
     }
 
+    public void find_water() {
+        water_bounds = new List<Vector2>();
+
+        for (int i = 0; i < width2; ++i)
+        {
+            for (int j = 0; j < height2; ++j)
+            {
+
+                if (edge_of_water(i, j) && terrain[i, j].GetHue() > 60.0)
+                    water_bounds.Add(new Vector2(i, j));
+            }
+        }
+    }
+
+    public bool edge_of_water(int x, int y) {
+        
+        if(x > 0) {
+            if (terrain[x - 1, y].GetHue() < 60.0) 
+                return true;
+        }
+
+        if(x < width2 - 1) {
+            if (terrain[x + 1, y].GetHue() < 60.0)
+                return true;
+        }
+
+        if(y > 0) {
+            if (terrain[x, y - 1].GetHue() < 60.0)
+                return true;
+        }
+
+        if(y < height2 - 1) {
+            if (terrain[x, y + 1].GetHue() < 60.0)
+                return true;
+        }
+
+        return false;
+    }
     public void InitializeMaps()
     {
         densityMap.Image = System.Drawing.Image.FromFile("density_map.png");
