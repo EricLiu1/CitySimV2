@@ -159,7 +159,8 @@ public class CairoGraphic : DrawingArea
         }
     }
 
-    public void InitializeSeeds() {
+    public void InitializeMaps()
+    {
         densityMap.Image = System.Drawing.Image.FromFile("density_map.png");
         densityMap.Size = new Size(width2, height2);
         densityMap.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -189,6 +190,7 @@ public class CairoGraphic : DrawingArea
         }
     }
 
+
     public List<Edge> test() 
     {
         var direction = new Vector2(0, 0);
@@ -214,10 +216,10 @@ public class CairoGraphic : DrawingArea
         //Streamline candidate = new Streamline(current);
 
         //gridline tensors
-        //weightedavgs.Add(Tensor.FromRTheta(2, M_PI, new Vector2(0.3f, 0.5f)));
-        //weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI, new Vector2(0.8f, 0.5f)));
-        //weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.5f, 0.5f)));
-        //weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.2f, 0.9f)));
+        weightedavgs.Add(Tensor.FromRTheta(2, M_PI, new Vector2(0.3f, 0.5f)));
+        weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI, new Vector2(0.8f, 0.5f)));
+        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.5f, 0.5f)));
+        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.2f, 0.9f)));
         weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.7f, 0.3f)));
 
         Vector2 prev_direction = Vector2.Zero;
@@ -299,7 +301,7 @@ public class CairoGraphic : DrawingArea
         {
             width2 = w;
             height2 = h;
-            InitializeSeeds();
+            InitializeMaps();
             changed = true;
         }
 

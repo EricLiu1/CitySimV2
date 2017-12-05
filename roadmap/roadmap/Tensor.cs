@@ -183,14 +183,12 @@ public class Seed: FastPriorityQueueNode
     public Vector2 pos;
     public Vector2 field;
     public Vector2 alt_field;
-    public int priority;
 
-    public Seed(Vector2 start, Vector2 main, Vector2 alt, int pri)
+    public Seed(Vector2 start, Vector2 main, Vector2 alt)
     {
         pos = start;
         field = main;
         alt_field = alt;
-        priority = pri;
     }
 
 }
