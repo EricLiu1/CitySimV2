@@ -1,19 +1,18 @@
 ﻿<Properties StartupConfiguration="{A111CD87-6AA0-4E52-B24B-5A825205136D}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="roadmap/Tensor.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="roadmap/EmptyClass.cs">
     <Files>
-      <File FileName="roadmap/Program.cs" Line="58" Column="9" />
-      <File FileName="roadmap/Tensor.cs" Line="100" Column="12" />
-      <File FileName="roadmap/Properties/AssemblyInfo.cs" Line="1" Column="1" />
+      <File FileName="roadmap/Program.cs" Line="223" Column="29" />
+      <File FileName="roadmap/Tensor.cs" Line="187" Column="24" />
+      <File FileName="roadmap/EmptyClass.cs" Line="6" Column="27" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
           <Node name="roadmap" expanded="True">
             <Node name="roadmap" expanded="True">
-              <Node name="References" expanded="True">
-                <Node name="System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" selected="True" />
-              </Node>
+              <Node name="References" expanded="True" />
               <Node name="Properties" expanded="True" />
+              <Node name="EmptyClass.cs" selected="True" />
             </Node>
           </Node>
         </State>

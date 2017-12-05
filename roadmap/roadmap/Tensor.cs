@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Priority_Queue;
 
 public struct Tensor
 {
@@ -9,8 +10,8 @@ public struct Tensor
     //     | sin(2theta) -cos(2theta) |    | _ _ |
     // where R >= 0 and theta is [0, 2pi)
 
-    public readonly double A;
-    public readonly double B;
+    public  double A;
+    public  double B;
     public int type;
     public Vector2 center2;
 
@@ -30,8 +31,7 @@ public struct Tensor
     public static Tensor FromXY(Vector2 pos, Vector2 center)
     {
         Vector2 xy = pos - center;
-        //xy *= 1000;
-        //Console.WriteLine(xy.X + " " + xy.Y);
+
         var xy2 = -2 * xy.X * xy.Y;
         var diffSquares = xy.Y * xy.Y - xy.X * xy.X;
         return Normalize(new Tensor(diffSquares, xy2, 1, center));
@@ -101,105 +101,98 @@ public struct Tensor
         return new Vector2((float)A, (float)B);
     }
 
-    public static Tensor Sample(Vector2 pos, Vector2 prev_dir, List<Tensor> weightedavgs) 
+    public static Tensor Sample(Vector2 pos, Vector2 prev_dir, List<Tensor> weightedavgs, bool tracingMajor)
     {
-        Tensor t = new Tensor();
-        double dist = 0;
-        Console.WriteLine(weightedavgs.Count);
+        Tensor t = new Tensor(0, 0, 0, Vector2.Zero);
+        float dist = 0f;
+        float d = 0f;
+        Vector2 dif;
 
         for (int j = 0; j < weightedavgs.Count; ++j)
         {
-            Vector2 major, minor;
-            Vector2 dif = new Vector2(weightedavgs[j].center2.X - pos.X, weightedavgs[j].center2.Y - pos.Y);
-            dist = Math.Sqrt(dif.X * dif.X + dif.Y * dif.Y);
-            if (weightedavgs[j].type == 0)
-            {
-                weightedavgs[j].EigenVectors(out major, out minor);
-                if (prev_dir == Vector2.Zero || Vector2.Dot(prev_dir, major) >= 0)
-                    t += (1 - dist) * weightedavgs[j];
+            dif = new Vector2(weightedavgs[j].center2.X - pos.X, weightedavgs[j].center2.Y - pos.Y);
+            dist += dif.Length();
+        }
 
-                //  Since we didn't return one of the cases above, reverse the direction
-                else
-                    t += (1 - dist) * -weightedavgs[j];
-            }
+        for (int j = 0; j < weightedavgs.Count; ++j)
+        {
+            dif = new Vector2(weightedavgs[j].center2.X - pos.X, weightedavgs[j].center2.Y - pos.Y);
+            d = dif.Length();
+            if (weightedavgs.Count == 1) d = 0;
+
+            if (weightedavgs[j].type == 0) t += ((dist - d) / dist) * weightedavgs[j];
+
             else if (weightedavgs[j].type == 1)
             {
-                Tensor x;
-                Vector2 v = Vector2.Zero;
-                Vector2 xy = pos - weightedavgs[j].center2;
-                //xy *= 1000;
-                //Console.WriteLine(xy.X + " " + xy.Y);
-                var xy2 = -2 * xy.X * xy.Y;
-                var diffSquares = xy.Y * xy.Y - xy.X * xy.X;
+                t += ((dist - d) / dist) * Tensor.FromXY(pos, weightedavgs[j].center2);
+                //Vector2 v = Vector2.Zero;
+                //Vector2 xy = pos - weightedavgs[j].center2;
 
-                var l = Math.Sqrt(diffSquares * diffSquares + xy2 * xy2);
+                //if (x.A != 0 && x.B != 0)
+                //{
+                //    x.EigenVectors(out major, out minor);
+                //    v = major;
 
-                if (Math.Abs(l) < float.Epsilon)
-                {
-                    x = new Tensor();
-                    x.EigenVectors(out major, out minor);
-                    v = major;
-                }
-                else
-                {
-                    x = Normalize(new Tensor((float)(diffSquares / l), (float)(xy2 / l), 1, weightedavgs[j].center2));
-                    x.EigenVectors(out major, out minor);
-                    v = major;
-                }
-
-
-                if (prev_dir == Vector2.Zero || Vector2.Dot(prev_dir, major) >= 0)
-                    t += (1 - dist) * x;
-                else
-                    t += (1 - dist) * -x;
+                //    if (prev_dir == Vector2.Zero || Vector2.Dot(prev_dir, major) >= 0)
+                //        t += ((dist - d) / dist) * x;
+                //    else
+                //        t += ((dist - d) / dist) * -x;
+                //}
             }
         }
         return t;
+
     }
 }
 
 public class Edge
 {
-    private readonly Vertex _a;
-    public Vertex A { get { return _a; } }
+    public Vertex a;
+    public Vertex b;
 
-    private readonly Vertex _b;
-    public Vertex B { get { return _b; } }
+    public Vector2 direction;
 
-    private readonly Vector2 _direction;
-    public Vector2 Direction { get { return _direction; } }
+    public Streamline streamline;
 
-    private readonly Streamline _streamline;
-    public Streamline Streamline { get { return _streamline; } }
-
-    public Edge(Streamline stream, Vertex a, Vertex b)
+    public Edge(Streamline stream, Vertex v1, Vertex v2)
     {
-        _a = a;
-        _b = b;
-        _streamline = stream;
-        _direction = Vector2.Normalize(b.Position - a.Position);
+        a = v1;
+        b = v2;
+        streamline = stream;
+        direction = Vector2.Normalize(b.pos - a.pos);
     }
 
     public Edge MakeEdge(Vertex v1, Vertex v2, Streamline stream) {
         var e = new Edge(stream, v1, v2);
 
-        v1._edges.Add(e);
-        v2._edges.Add(e);
+        v1.edges.Add(e);
+        v2.edges.Add(e);
 
         return e;
     }
 }
 
 public class Vertex {
-    internal readonly Vector2 pos;
-    public Vector2 Position { get { return pos; } }
-
-    public List<Edge> _edges = new List<Edge>();
-    public IEnumerable<Edge> Edges { get { return _edges; } }
-
-    public int EdgeCount => _edges.Count;
-
+    public Vector2 pos;
+    public List<Edge> edges = new List<Edge>();
     public Vertex(Vector2 p) => pos = p;
+}
+
+public class Seed: FastPriorityQueueNode
+{
+    public Vector2 pos;
+    public Vector2 field;
+    public Vector2 alt_field;
+    public int priority;
+
+    public Seed(Vector2 start, Vector2 main, Vector2 alt, int pri)
+    {
+        pos = start;
+        field = main;
+        alt_field = alt;
+        priority = pri;
+    }
+
 }
 
 public class Streamline {

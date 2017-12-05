@@ -150,8 +150,8 @@ public class CairoGraphic : DrawingArea
         for (int i = 0; i < streamlines.Count; ++i)
         {
             Edge myedge2 = streamlines[i];
-            PointD start = new PointD(myedge2.A.Position.X, myedge2.A.Position.Y);
-            PointD end = new PointD(myedge2.B.Position.X, myedge2.B.Position.Y);
+            PointD start = new PointD(myedge2.a.pos.X, myedge2.a.pos.Y);
+            PointD end = new PointD(myedge2.b.pos.X, myedge2.b.pos.Y);
             gr.LineTo(start);
             gr.LineTo(end);
             gr.Stroke();
@@ -189,29 +189,10 @@ public class CairoGraphic : DrawingArea
         }
     }
 
-    public Vector2 Rk4_sample_field(Vector2 point, Vector2 prev_dir, List<Tensor> w)
-    {
-        Vector2 major, minor;
-
-        Tensor.Sample(point, prev_dir, w).EigenVectors(out major, out minor);
-        var k1 = major;
-
-        Tensor.Sample(point + k1 / 2f, prev_dir, w).EigenVectors(out major, out minor);
-        var k2 = major;
-
-        Tensor.Sample(point + k2 / 2f, prev_dir, w).EigenVectors(out major, out minor);
-        var k3 = major;
-
-        Tensor.Sample(point + k3, prev_dir, w).EigenVectors(out major, out minor);
-        var k4 = major;
-
-        return k1 / 6f + k2 / 3f + k3 / 3f + k4 / 6f;
-    }
-
     public List<Edge> test() 
     {
         var direction = new Vector2(0, 0);
-        var position = new Vector2((float)1.0, (float)0.1);
+        var position = new Vector2((float)0.68, (float)0.27);
         var position2 = new Vector2((float)0.7, (float)0.2);
         var position3 = new Vector2((float)0.6, (float)0.6);
         var position4 = new Vector2((float)0.1, (float)0.2);
@@ -235,9 +216,9 @@ public class CairoGraphic : DrawingArea
         //gridline tensors
         //weightedavgs.Add(Tensor.FromRTheta(2, M_PI, new Vector2(0.3f, 0.5f)));
         //weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI, new Vector2(0.8f, 0.5f)));
-        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.5f, 0.5f)));
+        //weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.5f, 0.5f)));
         //weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.2f, 0.9f)));
-        //weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.7f, 0.3f)));
+        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.7f, 0.3f)));
 
         Vector2 prev_direction = Vector2.Zero;
         //var mergedistance = 0.01;
@@ -247,9 +228,12 @@ public class CairoGraphic : DrawingArea
 
             Streamline candidate = new Streamline(current);
 
-            for (int i = 0; i < 10000; ++i)
+            for (int i = 0; i < 100; ++i)
             {
-                direction = Rk4_sample_field(current.Position, prev_direction, weightedavgs);
+                direction = Rk4_sample_field(current.pos, prev_direction, weightedavgs, true);
+                //Tensor.FromXY(current.pos, weightedavgs[0].center2).EigenVectors(out major, out minor);
+                //direction = major;
+                //Console.WriteLine(direction.X + " " + direction.Y);
 
                 //if segment is too small then don't create an edge
                 if (direction.Length() < 0.000005f)
@@ -258,7 +242,7 @@ public class CairoGraphic : DrawingArea
                     break;
                 }
 
-                var temp = new Vector2(current.Position.X + direction.X / 100, current.Position.Y + direction.Y / 100);
+                var temp = new Vector2(current.pos.X + direction.X / 100, current.pos.Y + direction.Y / 100);
 
                 //if segment ends in water then don't create an edge
                 int x = (int)(temp.X * width2);
@@ -306,7 +290,7 @@ public class CairoGraphic : DrawingArea
         Gdk.Window win = args.Window;
         //Gdk.Rectangle area = args.Area;
 
-        Cairo.Context g = Gdk.CairoHelper.Create(win);
+        Context g = Gdk.CairoHelper.Create(win);
 
         int x, y, w, h, d;
         win.GetGeometry(out x, out y, out w, out h, out d);

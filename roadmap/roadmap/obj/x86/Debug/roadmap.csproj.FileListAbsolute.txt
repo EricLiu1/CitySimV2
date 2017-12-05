@@ -24,3 +24,6 @@
 /Users/kevinzhang/citysim/CitySimV2/roadmap/roadmap/bin/Debug/System.Numerics.dll
 /Users/kevinzhang/citysim/CitySimV2/roadmap/roadmap/bin/Debug/System.Numerics.Vectors.dll
 /Users/kevinzhang/citysim/CitySimV2/roadmap/roadmap/bin/Debug/System.Numerics.Vectors.xml
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/Priority Queue.dll
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/Priority Queue.pdb
+/Users/AbhinavSangisetti/Desktop/CitySimV2/roadmap/roadmap/bin/Debug/Priority Queue.xml
