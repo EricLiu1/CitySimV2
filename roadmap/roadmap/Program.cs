@@ -57,6 +57,7 @@ public class GtkCairo
         w.ShowAll();
 
         Gtk.Application.Run();
+
     }
 
 
@@ -67,95 +68,221 @@ public class CairoGraphic : DrawingArea
 
     static readonly double M_PI = 3.14159265358979323846;
     static Tensor t;
-    static bool p = false;
 
     static int width2 = 0;
     static int height2 = 0;
-    PictureBox boundaryMap = new PictureBox();
+    bool changed = true;
+    PictureBox densityMap = new PictureBox();
     PictureBox terrainMap = new PictureBox();
     System.Drawing.Color[,] density;
     System.Drawing.Color[,] terrain;
+    public List<Tensor> weightedavgs = new List<Tensor>();
 
-    static void draw(Cairo.Context gr, int width, int height)
+
+    public void draw(Cairo.Context gr, int width, int height)
     {
-        
+        //if dimensions are changed redraw the terrain map
+        if(changed) {
+            changed = false;
+            gr.Scale(width, height);
 
+            gr.LineWidth = 0.005;
+            for (double i = 0; i < width; ++i) 
+            {
+                int k = (int)i;
+                bool water = false;
 
-        gr.Scale(width, height);
-        gr.LineWidth = 0.01;
- 
+                //normal colors
+                double myR = 0.9;
+                double myG = 0.9;
+                double myB = 0.9;
+
+                //water colors
+                double myR2 = 0.8;
+                double myG2 = 0.8;
+                double myB2 = 1.0;
+                gr.SetSourceColor(new Cairo.Color(myR, myG, myB, 1));
+                PointD start2 = new PointD(i/width, 0);
+                gr.LineTo(start2);
+
+                PointD end2 = new PointD(i/width, 1/height);
+                for (double j = 1; j < height; ++j) 
+                {
+                    if (terrain[(int)i, (int)j].GetHue() > 60.0f && !water)
+                    {
+                        gr.LineTo(end2);
+                        gr.Stroke();
+
+                        gr.SetSourceColor(new Cairo.Color(myR2, myG2, myB2, 1));
+                        start2.Y = j / height;
+                        gr.LineTo(start2);
+                        end2.Y = j / height;
+                        water = true;
+                    }
+                    else if(terrain[(int)i, (int)j].GetHue() < 60.0f && water) {
+                        gr.LineTo(end2);
+                        gr.Stroke();
+
+                        gr.SetSourceColor(new Cairo.Color(myR, myG, myB, 1));
+                        start2.Y = j / height;
+                        gr.LineTo(start2);
+                        end2.Y = j / height;
+                        water = false;
+                    }
+                    else
+                    {
+                        end2.Y = j / height;
+                    }
+                }
+                gr.LineTo(end2);
+                gr.Stroke();
+            }
+
+        }
+
+        gr.LineWidth = 0.005;
+
         /* draw helping lines */
         gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
 
-
-        gr.LineTo(new PointD(0.5, 0.5));
-
-        List<PointD> streamlines = CairoGraphic.test();
+        List<Edge> streamlines = test();
+        //Console.WriteLine(streamlines.Count);
         for (int i = 0; i < streamlines.Count; ++i)
         {
-            Console.WriteLine(streamlines[i].X + " " + streamlines[i].Y);
-            gr.LineTo(streamlines[i]);
+            Edge myedge2 = streamlines[i];
+            PointD start = new PointD(myedge2.a.pos.X, myedge2.a.pos.Y);
+            PointD end = new PointD(myedge2.b.pos.X, myedge2.b.pos.Y);
+            gr.LineTo(start);
+            gr.LineTo(end);
             gr.Stroke();
-            gr.LineTo(streamlines[i]);
+
         }
     }
 
-    public void InitializeSeeds()
+    public void InitializeMaps()
     {
-        //boundaryMap.Image = System.Drawing.Image.FromFile("boundary_map.png");
-        //boundaryMap.Size = new Size(width2, height2);
-        //boundaryMap.Location = new System.Drawing.Point(0, 0);
-        //density = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
+        densityMap.Image = System.Drawing.Image.FromFile("density_map.png");
+        densityMap.Size = new Size(width2, height2);
+        densityMap.SizeMode = PictureBoxSizeMode.StretchImage;
+        densityMap.Location = new System.Drawing.Point(0, 0);
+        density = new System.Drawing.Color[densityMap.Width, densityMap.Height];
 
-        //for (int i = 0; i < boundaryMap.Width; ++i)
-        //{
-        //    for (int j = 0; j < boundaryMap.Height; ++j)
-        //    {
-        //        density[i, j] = GetColorAt(i, j, boundaryMap);
-        //    }
-        //}
+        terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
+        terrainMap.Size = new Size(width2, height2);
+        terrainMap.SizeMode = PictureBoxSizeMode.StretchImage;
+        terrainMap.Location = new System.Drawing.Point(0, 0);
+        terrain = new System.Drawing.Color[terrainMap.Width, terrainMap.Height];
 
-        //terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
-        //terrainMap.Size = new Size(width2, height2);
-        //terrainMap.Location = new System.Drawing.Point(0, 0);
-        //terrain = new System.Drawing.Color[boundaryMap.Width, boundaryMap.Height];
+        Bitmap img = (Bitmap)densityMap.Image;
+        Bitmap img2 = (Bitmap)terrainMap.Image;
+        float stretch_X = img.Width / (float)densityMap.Width;
+        float stretch_Y = img.Height / (float)densityMap.Height;
+        float stretch_X2 = img2.Width / (float)terrainMap.Width;
+        float stretch_Y2 = img2.Height / (float)terrainMap.Height;
 
-        //for (int i = 0; i < terrainMap.Width; ++i) {
-        //    for (int j = 0; j < terrainMap.Height; ++j) {
-        //        terrain[i, j] = GetColorAt(i, j, terrainMap);
-        //    }
-        //}
-
+        for (int i = 0; i < densityMap.Width; ++i)
+        {
+            for (int j = 0; j < densityMap.Height; ++j)
+            {
+                density[i, j] = img.GetPixel((int)(i * stretch_X), (int)(j * stretch_Y));
+                terrain[i, j] = img2.GetPixel((int)(i * stretch_X2), (int)(j * stretch_Y2));
+            }
+        }
     }
 
-    public static List<PointD> test() 
+
+    public List<Edge> test() 
     {
         var direction = new Vector2(0, 0);
-        var position = new PointD(0.5, 0.5);
+        var position = new Vector2((float)0.68, (float)0.27);
+        var position2 = new Vector2((float)0.7, (float)0.2);
+        var position3 = new Vector2((float)0.6, (float)0.6);
+        var position4 = new Vector2((float)0.1, (float)0.2);
+        var position5 = new Vector2((float)0.4, (float)0.1);
+        var position6 = new Vector2((float)0.2, (float)0.8);
+        var position7 = new Vector2((float)0.9, (float)0.7);
 
-        List<PointD> ans = new List<PointD>();
-        ans.Add(position);
-        t = Tensor.FromRTheta(2, M_PI);
+        List<Vector2> seeds = new List<Vector2>();
+        seeds.Add(position);
+        seeds.Add(position2);
+        seeds.Add(position3);
+        seeds.Add(position4);
+        seeds.Add(position5);
+        seeds.Add(position6);
+        seeds.Add(position7);
+
+        List<Edge> ans = new List<Edge>();
+        //Vertex current = new Vertex(position);
+        //Streamline candidate = new Streamline(current);
+
+        //gridline tensors
+        weightedavgs.Add(Tensor.FromRTheta(2, M_PI, new Vector2(0.3f, 0.5f)));
+        weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI, new Vector2(0.8f, 0.5f)));
+        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.5f, 0.5f)));
+        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.2f, 0.9f)));
+        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.7f, 0.3f)));
+
+        Vector2 prev_direction = Vector2.Zero;
+        //var mergedistance = 0.01;
+        for (int _ = 0; _ < seeds.Count; ++_)
+        {
+            Vertex current = new Vertex(seeds[_]);
+
+            Streamline candidate = new Streamline(current);
+
+            for (int i = 0; i < 100; ++i)
+            {
+                //direction = Rk4_sample_field(current.pos, prev_direction, weightedavgs, true);
+                //Tensor.FromXY(current.pos, weightedavgs[0].center2).EigenVectors(out major, out minor);
+                //direction = major;
+                //Console.WriteLine(direction.X + " " + direction.Y);
+
+                //if segment is too small then don't create an edge
+                if (direction.Length() < 0.000005f)
+                {
+                    Console.WriteLine("hit deadzone");
+                    break;
+                }
+
+                var temp = new Vector2(current.pos.X + direction.X / 100, current.pos.Y + direction.Y / 100);
+
+                //if segment ends in water then don't create an edge
+                int x = (int)(temp.X * width2);
+                int y = (int)(temp.Y * height2);
+                if (x >= width2)
+                    x = width2 - 1;
+                if (x < 0)
+                    x = 0;
+                if (y >= height2)
+                    y = height2 - 1;
+                if (y < 0)
+                    y = 0;
+                
+                if (terrain[x, y].GetHue() > 60.0f)
+                {
+                    Console.WriteLine("hit water");
+                    break;
+                }
+
+                Vertex next = new Vertex(temp);
+
+                Edge myedge = new Edge(candidate, current, next);
+                myedge.MakeEdge(current, next, candidate);
+                candidate.vertices.Add(current);
+                ans.Add(myedge);
+
+                //if segment is out of bounds then add an edge and finish
+                if (temp.X > 1.0 || temp.X < 0.0 || temp.Y > 1.0 || temp.Y < 0.0)
+                    break;
+
+                current = next;
+
+                prev_direction = direction;
+            }
 
 
-        for (int i = 0; i < 100; ++i) {
-            
-            Vector2 coord = new Vector2( (float)position.X, (float)position.Y);
-
-            //Tensor t = Tensor.FromXY(coord);
-            Vector2 major = new Vector2();
-            Vector2 minor = new Vector2();
-
-            Random random = new Random();
-            t.EigenVectors(out major, out minor);
-            direction = major * .01f;
-            if (direction.Length() < 0.00005f)
-                break;
-            
-            position = new PointD(position.X + direction.X, position.Y + direction.Y);
-            ans.Add(position);
         }
-
+        weightedavgs.Clear();
         return ans;
     }
 
@@ -165,25 +292,22 @@ public class CairoGraphic : DrawingArea
         Gdk.Window win = args.Window;
         //Gdk.Rectangle area = args.Area;
 
-        Cairo.Context g = Gdk.CairoHelper.Create(win);
+        Context g = Gdk.CairoHelper.Create(win);
 
         int x, y, w, h, d;
         win.GetGeometry(out x, out y, out w, out h, out d);
 
-        if (!p)
+        if (w != width2 || height2 != h)
         {
             width2 = w;
             height2 = h;
-            InitializeSeeds();
-            p = true;
+            InitializeMaps();
+            changed = true;
         }
 
         draw(g, w, h);
+        g.Dispose();
         return true;
     }
 
-    public System.Drawing.Color GetColorAt(int x, int y, PictureBox p)
-    {
-        return ((Bitmap)p.Image).GetPixel(x, y);
-    }
 }
