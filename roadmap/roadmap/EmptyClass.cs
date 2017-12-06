@@ -7,8 +7,8 @@ namespace roadmap
 {
     public class RoadBuilder
     {
-        public static List<Edge> all_edges;
-        public static List<Vertex> all_vertices;
+        public List<Edge> all_edges;
+        public List<Vertex> all_vertices;
         public HashSet<Streamline> streams;
         public List<Tensor> tensors;
 
@@ -16,6 +16,7 @@ namespace roadmap
         {
             streams = new HashSet<Streamline>();
             all_edges = new List<Edge>();
+            tensors = new List<Tensor>();
             all_vertices = new List<Vertex>();
         }
 
@@ -63,8 +64,8 @@ namespace roadmap
             tensors.Add(Tensor.FromRTheta(2, 3.1415926, new Vector2(0.3f, 0.5f)));
             tensors.Add(Tensor.FromRTheta(0.5, 3.1415926, new Vector2(0.8f, 0.5f)));
             tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(0.5f, 0.5f)));
-            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(0.2f, 0.9f)));
-            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(0.7f, 0.3f)));
+            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(0.2f, 0.9f)));
+            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(0.7f, 0.3f)));
 
             var diff = max - min;
             Vector2 major, minor;
@@ -82,7 +83,8 @@ namespace roadmap
             Random r = new Random();
             for (int i = 0; i < 10; i++)
             {
-                var p = new Vector2((float)r.NextDouble(), (float)r.NextDouble()) + min;
+                //var p = new Vector2((float)r.NextDouble(), (float)r.NextDouble()) + min;
+                var p = new Vector2(i / 10f, i / 10f);
 
                 if (p.X < 0 || p.Y < 0 || p.X > 1 || p.Y > 1)
                     i--;
@@ -106,20 +108,31 @@ namespace roadmap
 
                 if (forward)
                 {
-                    var stream = Trace(s, false, seeds);
+                    var stream = Trace(s, false, seeds, true);
                     if (stream != null)
                     {
                         streams.Add(stream);
                         //streamCreated(stream);
                     }
+
+                    var stream2 = Trace(s, false, seeds, false);
+                    if(stream2 != null) {
+                        streams.Add(stream2);
+                    }
                 }
 
                 if (backward)
                 {
-                    var stream = Trace(s, true, seeds);
+                    var stream = Trace(s, true, seeds, true);
                     if (stream != null)
                     {
                         streams.Add(stream);
+                        //streamCreated(stream);
+                    }
+                    var stream2 = Trace(s, true, seeds, false);
+                    if (stream2 != null)
+                    {
+                        streams.Add(stream2);
                         //streamCreated(stream);
                     }
                 }
@@ -128,7 +141,7 @@ namespace roadmap
 
 
 
-        public Streamline Trace(Seed seed, bool reverse, FastPriorityQueue<Seed> seeds)
+        public Streamline Trace(Seed seed, bool reverse, FastPriorityQueue<Seed> seeds, bool tracingMajor)
         {
             float maxSegmentLength = 1;
             float mergeDistance = 25;
@@ -139,16 +152,24 @@ namespace roadmap
 
             var seedingDistance = float.MaxValue;
             var direction = Vector2.Zero;
+
             var position = seed.pos;
-            bool tracingMajor = true;
+            Vertex g = new Vertex(position);
+            all_vertices.Add(g);
+
             Vector2 prev_direction = Vector2.Zero;
             //var stream = new Streamline(FindOrCreateVertex(position, mergeDistance, cosineSearchAngle));
 
             for (var i = 0; i < 10000; i++)
             {
                 Vector2 major, minor;
-                Rk4_sample_field(out major, out minor, seed.pos, prev_direction, tensors, tracingMajor);
-                direction = major;
+                Rk4_sample_field(out major, out minor, position, prev_direction, tensors, tracingMajor);
+                if (tracingMajor)
+                    direction = major;
+                else
+                    direction = minor;
+
+                direction /= 500;
                 if (i == 0)
                     direction *= reverse ? -1 : 1;
 
@@ -160,6 +181,7 @@ namespace roadmap
                 //Excessive step check
                 if (segmentLength > maxSegmentLength)
                 {
+                    //Console.WriteLine("here");
                     direction /= segmentLength * maxSegmentLength;
                     segmentLength = maxSegmentLength;
                 }
@@ -172,15 +194,17 @@ namespace roadmap
                 //Bounds check
                 if (position.X < 0 || position.Y < 0 || position.X > 1 || position.Y > 1)
                 {
-                    Vertex start = new Vertex(temp);
-                    Vertex end = new Vertex(position);
-                    Edge myedge = new Edge(stream, start, end);
+                    //Console.WriteLine(direction.X + " " + direction.Y);
 
-                    myedge.MakeEdge(start, end, stream);
+                    Vertex start2 = new Vertex(temp);
+                    Vertex end2 = new Vertex(position);
+                    Edge myedge2 = new Edge(stream, start2, end2);
 
-                    stream.vertices.Add(end);
-                    all_vertices.Add(end);
-                    all_edges.Add(myedge);
+                    myedge2.MakeEdge(start2, end2, stream);
+
+                    stream.vertices.Add(end2);
+                    all_vertices.Add(end2);
+                    all_edges.Add(myedge2);
 
                     //CreateEdge(stream, position, Vector2.Normalize(direction), maxSegmentLength, maxSegmentLengthSquared, mergeDistance, cosineSearchAngle, skip: true);
                     break;

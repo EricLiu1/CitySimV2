@@ -1,9 +1,9 @@
 ﻿<Properties StartupConfiguration="{A111CD87-6AA0-4E52-B24B-5A825205136D}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Program.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="EmptyClass.cs">
     <Files>
-      <File FileName="Program.cs" Line="124" Column="31" />
-      <File FileName="Tensor.cs" Line="113" Column="57" />
-      <File FileName="EmptyClass.cs" Line="89" Column="21" />
+      <File FileName="Program.cs" Line="81" Column="60" />
+      <File FileName="Tensor.cs" Line="128" Column="43" />
+      <File FileName="EmptyClass.cs" Line="88" Column="17" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />

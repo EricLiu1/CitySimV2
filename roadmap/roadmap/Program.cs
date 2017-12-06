@@ -78,7 +78,7 @@ public class CairoGraphic : DrawingArea
     System.Drawing.Color[,] terrain;
     public List<Tensor> weightedavgs = new List<Tensor>();
     public List<Vector2> water_bounds;
-
+    public roadmap.RoadBuilder r = new roadmap.RoadBuilder();
 
     public void draw(Cairo.Context gr, int width, int height)
     {
@@ -143,7 +143,7 @@ public class CairoGraphic : DrawingArea
         gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
 
         List<Edge> streamlines = test();
-        //Console.WriteLine(streamlines.Count);
+        Console.WriteLine(streamlines.Count);
         for (int i = 0; i < streamlines.Count; ++i)
         {
             Edge myedge2 = streamlines[i];
@@ -228,97 +228,12 @@ public class CairoGraphic : DrawingArea
 
     public List<Edge> test() 
     {
-        var direction = new Vector2(0, 0);
-        var position = new Vector2((float)0.68, (float)0.27);
-        var position2 = new Vector2((float)0.7, (float)0.2);
-        var position3 = new Vector2((float)0.6, (float)0.6);
-        var position4 = new Vector2((float)0.1, (float)0.2);
-        var position5 = new Vector2((float)0.4, (float)0.1);
-        var position6 = new Vector2((float)0.2, (float)0.8);
-        var position7 = new Vector2((float)0.9, (float)0.7);
-
-        List<Vector2> seeds = new List<Vector2>();
-        seeds.Add(position);
-        seeds.Add(position2);
-        seeds.Add(position3);
-        seeds.Add(position4);
-        seeds.Add(position5);
-        seeds.Add(position6);
-        seeds.Add(position7);
-
-        List<Edge> ans = new List<Edge>();
-        //Vertex current = new Vertex(position);
-        //Streamline candidate = new Streamline(current);
-
-        //gridline tensors
-        weightedavgs.Add(Tensor.FromRTheta(2, M_PI, new Vector2(0.3f, 0.5f)));
-        weightedavgs.Add(Tensor.FromRTheta(0.5, M_PI, new Vector2(0.8f, 0.5f)));
-        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.5f, 0.5f)));
-        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.2f, 0.9f)));
-        weightedavgs.Add(Tensor.FromXY(seeds[0], new Vector2(0.7f, 0.3f)));
-
-        Vector2 prev_direction = Vector2.Zero;
-        //var mergedistance = 0.01;
-        for (int _ = 0; _ < seeds.Count; ++_)
-        {
-            Vertex current = new Vertex(seeds[_]);
-
-            Streamline candidate = new Streamline(current);
-
-            for (int i = 0; i < 100; ++i)
-            {
-                direction = Rk4_sample_field(current.pos, prev_direction, weightedavgs, true);
-                //Tensor.FromXY(current.pos, weightedavgs[0].center2).EigenVectors(out major, out minor);
-                //direction = major;
-                //Console.WriteLine(direction.X + " " + direction.Y);
-
-                //if segment is too small then don't create an edge
-                if (direction.Length() < 0.000005f)
-                {
-                    Console.WriteLine("hit deadzone");
-                    break;
-                }
-
-                var temp = new Vector2(current.pos.X + direction.X / 100, current.pos.Y + direction.Y / 100);
-
-                //if segment ends in water then don't create an edge
-                int x = (int)(temp.X * width2);
-                int y = (int)(temp.Y * height2);
-                if (x >= width2)
-                    x = width2 - 1;
-                if (x < 0)
-                    x = 0;
-                if (y >= height2)
-                    y = height2 - 1;
-                if (y < 0)
-                    y = 0;
-                
-                if (terrain[x, y].GetHue() > 60.0f)
-                {
-                    Console.WriteLine("hit water");
-                    break;
-                }
-
-                Vertex next = new Vertex(temp);
-
-                Edge myedge = new Edge(candidate, current, next);
-                myedge.MakeEdge(current, next, candidate);
-                candidate.vertices.Add(current);
-                ans.Add(myedge);
-
-                //if segment is out of bounds then add an edge and finish
-                if (temp.X > 1.0 || temp.X < 0.0 || temp.Y > 1.0 || temp.Y < 0.0)
-                    break;
-
-                current = next;
-
-                prev_direction = direction;
-            }
-
-
-        }
-        weightedavgs.Clear();
-        return ans;
+        r.all_edges = new List<Edge>();
+        r.all_vertices = new List<Vertex>();
+        r.tensors = new List<Tensor>();
+        r.streams = new HashSet<Streamline>();
+        r.InitializeSeeds(new Vector2(0, 0), new Vector2(1, 1));
+        return r.all_edges;
     }
 
 
