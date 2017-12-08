@@ -65,40 +65,22 @@ public class CairoGraphic : DrawingArea
 {
     static int width = 0;
     static int height = 0;
-    bool changed = true;
-    PictureBox densityMap = new PictureBox();
-    PictureBox terrainMap = new PictureBox();
-    System.Drawing.Color[,] density;
-    System.Drawing.Color[,] terrain;
     public List<Tensor> weightedavgs = new List<Tensor>();
     public List<Tensor> polyline;
     public RoadBuilder r = new RoadBuilder();
 
     public void draw(Context gr, int w, int h)
     {
-        //if dimensions are changed redraw the terrain map
         gr.Scale(width, height);
+        r.setDimensions(width, height);
+
+        /* Draw Terrain */
         gr.LineWidth = 0.05;
         drawTerrain(gr);
 
-        //find_water();
-
-
-
-        ///* draw highways */
+        /* Draw Highways */
         gr.LineWidth = 0.005;
-        gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
-        HashSet<Edge> all_edges = getStreamlines();
-        ////Console.WriteLine(streamlines.Count);
-        foreach (var e in  all_edges)
-        {
-            PointD start = new PointD(e.a.X/100, e.a.Y/100);
-            PointD end = new PointD(e.b.X/100, e.b.Y/100);
-            gr.MoveTo(start);
-            gr.LineTo(end);
-
-        }
-        gr.Stroke();
+        drawHighways(gr);
     }
 
     public void drawTerrain(Context gr) 
@@ -118,7 +100,7 @@ public class CairoGraphic : DrawingArea
             PointD end2 = new PointD(i / width, 1 / height);
             for (double j = 1; j < height; ++j)
             {
-                if (r.GetColor(width, height, (int)i, (int) j).GetHue() > 60.0f && !water)
+                if (r.GetColor((int)i, (int) j).GetHue() > 60.0f && !water)
                 {
                     gr.LineTo(end2);
                     gr.Stroke();
@@ -129,7 +111,7 @@ public class CairoGraphic : DrawingArea
                     end2.Y = j / height;
                     water = true;
                 }
-                else if (r.GetColor(width, height, (int)i, (int)j).GetHue() < 60.0f && water)
+                else if (r.GetColor((int)i, (int)j).GetHue() < 60.0f && water)
                 {
                     gr.LineTo(end2);
                     gr.Stroke();
@@ -149,37 +131,20 @@ public class CairoGraphic : DrawingArea
             gr.Stroke();
         }
     }
-    //public void find_water() {
-    //    bool[,] dilated_terrain = new bool[width2, height2];
 
-    //    int[] dx = { 1, -1, 0, 0 };
-    //    int[] dy = { 0, 0, 1, -1 };
-    //    for (var r = 0; r < width2; ++r) 
-    //    {
-    //        for (var c = 0; c < height2; ++c)
-    //        {
-    //            if ( c > 0 && terrain[r, c - 1] != terrain[r, c])
-    //                dilated_terrain[r, c] = true;
-    //            else if ( c < height2 - 1 && terrain[r, c + 1] != terrain[r, c])
-    //                dilated_terrain[r, c] = true;
-    //            else if (r < width2 - 1 && terrain[r + 1, c] != terrain[r, c])
-    //                dilated_terrain[r, c] = true;
-    //            else if (r > 0 && terrain[r - 1, c] != terrain[r, c])
-    //                dilated_terrain[r, c] = true;
-    //            else dilated_terrain[r, c] = false;
-    //        }
-    //    }
-
-    //    for (var r = 0; r < width2; ++r)
-    //    {
-    //        for (var c = 0; c < height2; ++c)
-    //        {
-    //            if (dilated_terrain[r, c])
-    //                polyline.AddRange(FollowPath(r, c, dilated_terrain));
-    //        }
-    //    }
-
-    //}
+    public void drawHighways(Context gr) 
+    {
+        gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
+        HashSet<Edge> all_edges = getStreamlines();
+        foreach (var e in all_edges)
+        {
+            PointD start = new PointD(e.a.X / 100, e.a.Y / 100);
+            PointD end = new PointD(e.b.X / 100, e.b.Y / 100);
+            gr.MoveTo(start);
+            gr.LineTo(end);
+        }
+        gr.Stroke();
+    }
 
     internal struct pixel_seed
     {
@@ -195,68 +160,11 @@ public class CairoGraphic : DrawingArea
         }
     }
 
-    //public static IEnumerable<Tensor> FollowPath(int start_r, int start_c, bool[,] terrain)
-    //{
-    //    Vector2 dir = Vector2.Zero;
-    //    Vector2 prev = new Vector2(start_r, start_c);
-    //    Vector2 curr = new Vector2(start_r, start_c);
-    //    int r = start_r, c = start_c;
-    //    int[] dx = { 1, 1, 0, -1, -1, -1, 0, 1 };
-    //    int[] dy = { 0, -1, -1, -1, 0, 1, 1, 1 };
-    //    Queue q = new Queue();
-    //    for (var i = 0; i < 8; ++i)
-    //    {
-    //        if (terrain[r + dx[i], c + dy[i]])
-    //            q.Enqueue(new pixel_seed(r + dx[i], c + dy[i], new Vector2(dx[i], dy[i])));
-    //    }
-    //    while (q.Count > 0)
-    //    {
-    //        var s = q.Dequeue();
-    //        Tensor t = Tensor.FromRTheta(dir.Length(), Math.PI);
-           
-    //    }
-    //     if (dir.Equals(Vector2.Zero)) 
-    //        {
-                
-    //        }
-
-
-    //    }
-
-    //}
-
-
-    //public bool edge_of_water(int x, int y) {
-
-    //    if(x > 0) {
-    //        if (terrain[x - 1, y].GetHue() < 60.0) 
-    //            return true;
-    //    }
-
-    //    if(x < width2 - 1) {
-    //        if (terrain[x + 1, y].GetHue() < 60.0)
-    //            return true;
-    //    }
-
-    //    if(y > 0) {
-    //        if (terrain[x, y - 1].GetHue() < 60.0)
-    //            return true;
-    //    }
-
-    //    if(y < height2 - 1) {
-    //        if (terrain[x, y + 1].GetHue() < 60.0)
-    //            return true;
-    //    }
-
-    //    return false;
-    //}
-
     public HashSet<Edge> getStreamlines() 
     {
         r.InitializeSeeds(new Vector2(0, 0), new Vector2(100, 100));
         return r.all_edges;
     }
-
 
     protected override bool OnExposeEvent(Gdk.EventExpose args)
     {
@@ -270,7 +178,6 @@ public class CairoGraphic : DrawingArea
 
         width = w;
         height = h;
-        changed = true;
         draw(g, w, h);
         g.Dispose();
 

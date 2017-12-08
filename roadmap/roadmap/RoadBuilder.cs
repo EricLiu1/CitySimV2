@@ -15,8 +15,11 @@ namespace roadmap
         public List<Streamline> streams;
         public List<Tensor> tensors;
         public bool initialized;
+
         public PictureBox densityMap = new PictureBox();
         public PictureBox terrainMap = new PictureBox();
+        public int width;
+        public int height;
 
         public RoadBuilder()
         {
@@ -30,13 +33,18 @@ namespace roadmap
             terrainMap.Size = new Size(terrainMap.Image.Width, terrainMap.Image.Height);
         }
 
-        public Color GetColor(int w, int h, int x, int y) 
+        public Color GetColor(int x, int y) 
         {
-            float stretch_X = terrainMap.Width / (float)w;
-            float stretch_Y = terrainMap.Height / (float)h;
+            float stretch_X = terrainMap.Width / (float)width;
+            float stretch_Y = terrainMap.Height / (float)height;
 
             return ((Bitmap)terrainMap.Image).GetPixel((int)(stretch_X * x), (int)(stretch_Y * y));
 
+        }
+
+        public void setDimensions(int width, int height) {
+            this.width = width;
+            this.height = height;
         }
 
         public void Rk4_sample_field(out Vector2 major, out Vector2 minor, Vector2 point, Vector2 prev_dir, List<Tensor> w)
@@ -123,11 +131,6 @@ namespace roadmap
 
             var seeds = RandomSeeds(min, max);
             SeedRunner(min, max, seeds, true, true);
-            //Console.WriteLine(all_vertices.Count);
-            //Console.WriteLine(all_edges.Count);
-            //Console.WriteLine(streams.Count); 
-            //Console.WriteLine(tensors.Count);
-
         }
 
         private static IEnumerable<Seed> RandomSeeds(Vector2 min, Vector2 max)
@@ -198,8 +201,8 @@ namespace roadmap
 
         public Streamline Trace(Vector2 min, Vector2 max, Seed seed, bool reverse, Queue seeds, bool tracingMajor)
         {
-            float maxSegmentLength = .5f;
-            float mergeDistance = 2.5f;
+            float maxSegmentLength = 0.5f;
+            float mergeDistance = 1.5f;
             float cosineSearchAngle = 2;
 
             Streamline stream = new Streamline(seed.pos);
