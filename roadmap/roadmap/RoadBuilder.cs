@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Numerics;
+using System.Windows.Forms;
 //using Priority_Queue;
 
 namespace roadmap
@@ -12,6 +14,9 @@ namespace roadmap
         public List<Vector2> all_vertices;
         public List<Streamline> streams;
         public List<Tensor> tensors;
+        public bool initialized;
+        public PictureBox densityMap = new PictureBox();
+        public PictureBox terrainMap = new PictureBox();
 
         public RoadBuilder()
         {
@@ -19,6 +24,19 @@ namespace roadmap
             all_edges = new HashSet<Edge>();
             tensors = new List<Tensor>();
             all_vertices = new List<Vector2>();
+            initialized = false;
+
+            terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
+            terrainMap.Size = new Size(terrainMap.Image.Width, terrainMap.Image.Height);
+        }
+
+        public Color GetColor(int w, int h, int x, int y) 
+        {
+            float stretch_X = terrainMap.Width / (float)w;
+            float stretch_Y = terrainMap.Height / (float)h;
+
+            return ((Bitmap)terrainMap.Image).GetPixel((int)(stretch_X * x), (int)(stretch_Y * y));
+
         }
 
         public void Rk4_sample_field(out Vector2 major, out Vector2 minor, Vector2 point, Vector2 prev_dir, List<Tensor> w)
@@ -86,6 +104,11 @@ namespace roadmap
 
         public void InitializeSeeds(Vector2 min, Vector2 max) 
         {
+            if (initialized)
+                return;
+
+            initialized = true;
+
             //gridline tensors
             tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI/4, new Vector2(30f, 50f)));
             tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(80f, 50f)));
@@ -186,7 +209,7 @@ namespace roadmap
 
             Vector2 position = seed.pos;
             all_vertices.Add(position);
-            Console.WriteLine("stream start" + seed.pos);
+            //Console.WriteLine("stream start" + seed.pos);
 
             Vector2 prev_direction = Vector2.Zero;
             Vector2 previous = prev_direction;
@@ -272,7 +295,7 @@ namespace roadmap
 
             //check if another vertex nearby to use instead
             var closestVertex = FindClosestVertex(pos, dir, mergeDistance, cosineSearchAngle, stream.last);
-            Console.WriteLine(closestVertex.X + " find closest vertex " + closestVertex.Y);
+            //Console.WriteLine(closestVertex.X + " find closest vertex " + closestVertex.Y);
 
             //check if edge intersects with another edge
             Edge intersectedEdge = null;
@@ -284,11 +307,11 @@ namespace roadmap
                 if ((intersectedPosition - intersectedEdge.a).Length() < mergeDistance)
                 {
                     closestVertex = intersectedEdge.a;
-                    Console.WriteLine(closestVertex.X + " a - closest vertex " + closestVertex.Y);
+                    //Console.WriteLine(closestVertex.X + " a - closest vertex " + closestVertex.Y);
                 }
                 else if ((intersectedPosition - intersectedEdge.b).Length() < mergeDistance) {
                     closestVertex = intersectedEdge.b;
-                    Console.WriteLine(closestVertex.X + " b - closest vertex " + closestVertex.Y);
+                    //Console.WriteLine(closestVertex.X + " b - closest vertex " + closestVertex.Y);
                 }
                 else
                 {
@@ -301,12 +324,12 @@ namespace roadmap
             }
 
             //check and handle intersection
-            Console.Write(stop_stream);
+            //Console.Write(stop_stream);
 
             if (!closestVertex.Equals(Vector2.Zero)) stop_stream = true;
             else closestVertex = pos;
 
-            Console.Write(stop_stream);
+            //Console.Write(stop_stream);
 
             //if new vertex is being added to the streamline, or if we're making a loop
             if (!stream.vertices.Contains(closestVertex) || stream.first.Equals(closestVertex))
@@ -330,8 +353,8 @@ namespace roadmap
                 all_edges.Add(e);
 
             }
-            Console.Write(stop_stream + "\n");
-            Console.WriteLine(closestVertex);
+            //Console.Write(stop_stream + "\n");
+            //Console.WriteLine(closestVertex);
             return stop_stream;
         }
 

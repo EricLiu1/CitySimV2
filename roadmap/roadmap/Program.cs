@@ -63,8 +63,8 @@ public class GtkCairo
 
 public class CairoGraphic : DrawingArea
 {
-    static int width2 = 0;
-    static int height2 = 0;
+    static int width = 0;
+    static int height = 0;
     bool changed = true;
     PictureBox densityMap = new PictureBox();
     PictureBox terrainMap = new PictureBox();
@@ -74,30 +74,51 @@ public class CairoGraphic : DrawingArea
     public List<Tensor> polyline;
     public RoadBuilder r = new RoadBuilder();
 
-    public void draw(Context gr, int width, int height)
+    public void draw(Context gr, int w, int h)
     {
         //if dimensions are changed redraw the terrain map
-
         gr.Scale(width, height);
-
         gr.LineWidth = 0.05;
-        for (double i = 0; i < width; ++i) 
+        drawTerrain(gr);
+
+        //find_water();
+
+
+
+        ///* draw highways */
+        gr.LineWidth = 0.005;
+        gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
+        HashSet<Edge> all_edges = getStreamlines();
+        ////Console.WriteLine(streamlines.Count);
+        foreach (var e in  all_edges)
+        {
+            PointD start = new PointD(e.a.X/100, e.a.Y/100);
+            PointD end = new PointD(e.b.X/100, e.b.Y/100);
+            gr.MoveTo(start);
+            gr.LineTo(end);
+
+        }
+        gr.Stroke();
+    }
+
+    public void drawTerrain(Context gr) 
+    {
+        for (double i = 0; i < width; ++i)
         {
             int k = (int)i;
             bool water = false;
 
-            //normal color
             Cairo.Color normal_color = new Cairo.Color(0.9, 0.9, 0.9, 1);
             Cairo.Color water_color = new Cairo.Color(0.8, 0.8, 1.0, 1);
 
             gr.SetSourceColor(normal_color);
-            PointD start2 = new PointD(i/width, 0);
+            PointD start2 = new PointD(i / width, 0);
             gr.LineTo(start2);
 
-            PointD end2 = new PointD(i/width, 1/height);
-            for (double j = 1; j < height; ++j) 
+            PointD end2 = new PointD(i / width, 1 / height);
+            for (double j = 1; j < height; ++j)
             {
-                if (terrain[(int)i, (int)j].GetHue() > 60.0f && !water)
+                if (r.GetColor(width, height, (int)i, (int) j).GetHue() > 60.0f && !water)
                 {
                     gr.LineTo(end2);
                     gr.Stroke();
@@ -108,7 +129,8 @@ public class CairoGraphic : DrawingArea
                     end2.Y = j / height;
                     water = true;
                 }
-                else if(terrain[(int)i, (int)j].GetHue() < 60.0f && water) {
+                else if (r.GetColor(width, height, (int)i, (int)j).GetHue() < 60.0f && water)
+                {
                     gr.LineTo(end2);
                     gr.Stroke();
 
@@ -126,28 +148,7 @@ public class CairoGraphic : DrawingArea
             gr.LineTo(end2);
             gr.Stroke();
         }
-
-        //find_water();
-
-        gr.LineWidth = 0.005;
-
-        /* draw helping lines */
-        gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
-        r = new RoadBuilder();
-        r.InitializeSeeds(new Vector2(0, 0), new Vector2(100, 100));
-        HashSet<Edge> all_edges = r.all_edges;
-        //Console.WriteLine(streamlines.Count);
-        foreach (var e in  all_edges)
-        {
-            PointD start = new PointD(e.a.X/100, e.a.Y/100);
-            PointD end = new PointD(e.b.X/100, e.b.Y/100);
-            gr.MoveTo(start);
-            gr.LineTo(end);
-
-        }
-        gr.Stroke();
     }
-
     //public void find_water() {
     //    bool[,] dilated_terrain = new bool[width2, height2];
 
@@ -225,72 +226,33 @@ public class CairoGraphic : DrawingArea
     //}
 
 
-    public bool edge_of_water(int x, int y) {
+    //public bool edge_of_water(int x, int y) {
 
+    //    if(x > 0) {
+    //        if (terrain[x - 1, y].GetHue() < 60.0) 
+    //            return true;
+    //    }
 
+    //    if(x < width2 - 1) {
+    //        if (terrain[x + 1, y].GetHue() < 60.0)
+    //            return true;
+    //    }
 
+    //    if(y > 0) {
+    //        if (terrain[x, y - 1].GetHue() < 60.0)
+    //            return true;
+    //    }
 
-        if(x > 0) {
-            if (terrain[x - 1, y].GetHue() < 60.0) 
-                return true;
-        }
+    //    if(y < height2 - 1) {
+    //        if (terrain[x, y + 1].GetHue() < 60.0)
+    //            return true;
+    //    }
 
-        if(x < width2 - 1) {
-            if (terrain[x + 1, y].GetHue() < 60.0)
-                return true;
-        }
+    //    return false;
+    //}
 
-        if(y > 0) {
-            if (terrain[x, y - 1].GetHue() < 60.0)
-                return true;
-        }
-
-        if(y < height2 - 1) {
-            if (terrain[x, y + 1].GetHue() < 60.0)
-                return true;
-        }
-
-        return false;
-    }
-    public void InitializeMaps()
+    public HashSet<Edge> getStreamlines() 
     {
-        densityMap.Image = System.Drawing.Image.FromFile("density_map.png");
-        densityMap.Size = new Size(width2, height2);
-        densityMap.SizeMode = PictureBoxSizeMode.StretchImage;
-        densityMap.Location = new System.Drawing.Point(0, 0);
-        density = new System.Drawing.Color[densityMap.Width, densityMap.Height];
-
-        terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
-        terrainMap.Size = new Size(width2, height2);
-        terrainMap.SizeMode = PictureBoxSizeMode.StretchImage;
-        terrainMap.Location = new System.Drawing.Point(0, 0);
-        terrain = new System.Drawing.Color[terrainMap.Width, terrainMap.Height];
-
-        Bitmap img = (Bitmap)densityMap.Image;
-        Bitmap img2 = (Bitmap)terrainMap.Image;
-        float stretch_X = img.Width / (float)densityMap.Width;
-        float stretch_Y = img.Height / (float)densityMap.Height;
-        float stretch_X2 = img2.Width / (float)terrainMap.Width;
-        float stretch_Y2 = img2.Height / (float)terrainMap.Height;
-
-        for (int i = 0; i < densityMap.Width; ++i)
-        {
-            for (int j = 0; j < densityMap.Height; ++j)
-            {
-                density[i, j] = img.GetPixel((int)(i * stretch_X), (int)(j * stretch_Y));
-                terrain[i, j] = img2.GetPixel((int)(i * stretch_X2), (int)(j * stretch_Y2));
-            }
-        }
-    }
-
-
-    public HashSet<Edge> test() 
-    {
-        //r.all_edges = new HashSet<Edge>();
-        //r.all_vertices = new List<Vector2>();
-        //r.tensors = new List<Tensor>();
-        //r.streams = new HashSet<Streamline>();
-        r = new RoadBuilder();
         r.InitializeSeeds(new Vector2(0, 0), new Vector2(100, 100));
         return r.all_edges;
     }
@@ -306,18 +268,12 @@ public class CairoGraphic : DrawingArea
         int x, y, w, h, d;
         win.GetGeometry(out x, out y, out w, out h, out d);
 
-        //if (w != width2 || height2 != h)
-        //{
-        //    width2 = w;
-        //    height2 = h;
-        //    InitializeMaps();
-        //    changed = true;
-        //}
-        width2 = w;
-        height2 = h;
-        InitializeMaps();
+        width = w;
+        height = h;
+        changed = true;
         draw(g, w, h);
-        //g.Dispose();
+        g.Dispose();
+
         return true;
     }
 
