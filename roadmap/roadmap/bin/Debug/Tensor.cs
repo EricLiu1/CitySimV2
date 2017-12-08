@@ -49,7 +49,7 @@ public struct Tensor
 
     public static Tensor operator +(Tensor left, Tensor right)
     {
-        return new Tensor(left.A + right.A, left.B + right.B, right.type, right.center2);
+        return new Tensor(left.A + right.A, left.B + right.B, 2, Vector2.Zero);
     }
 
     public static Tensor operator -(Tensor t)
@@ -96,113 +96,100 @@ public struct Tensor
         }
     }
 
-    public Vector2 Sample()
+    public static Tensor SampleDecayWeights(Vector2 pos, List<Tensor> weightedavgs) 
     {
-        return new Vector2((float)A, (float)B);
+        Tensor combined_tensor = new Tensor(0, 0, 0, Vector2.Zero);
+        float d_squared = 0f;
+        float decayConstant = -0.001f;
+
+        foreach (var t in weightedavgs)
+        {
+            d_squared = (float)Math.Pow(t.center2.X - pos.X, 2) + (float)Math.Pow(t.center2.Y - pos.Y, 2);
+            //Console.WriteLine("distance squared: " + d_squared);
+            if (t.type == 0)
+                combined_tensor += ((float)Math.Exp(decayConstant * d_squared) * t);
+
+            else if (t.type == 1)
+                combined_tensor += ((float)Math.Exp(decayConstant * d_squared) * Tensor.FromXY(pos, t.center2));
+        }
+
+        return combined_tensor;
     }
 
-    public static Tensor Sample(Vector2 pos, Vector2 prev_dir, List<Tensor> weightedavgs, bool tracingMajor)
+    public static Tensor Sample(Vector2 pos, List<Tensor> weightedavgs)
     {
-        Tensor t = new Tensor(0, 0, 0, Vector2.Zero);
-        float dist = 0f;
-        float d = 0f;
-        Vector2 dif;
+        Tensor combined_tensor = new Tensor(0, 0, 0, Vector2.Zero);
 
-        for (int j = 0; j < weightedavgs.Count; ++j)
-        {
-            dif = new Vector2(weightedavgs[j].center2.X - pos.X, weightedavgs[j].center2.Y - pos.Y);
-            dist += dif.Length();
+        float total_weight = 0, d = 0;
+
+        foreach (var t in weightedavgs) {
+            total_weight += (t.center2-pos).Length();
         }
 
-        for (int j = 0; j < weightedavgs.Count; ++j)
+        foreach (var t in weightedavgs)
         {
-            dif = new Vector2(weightedavgs[j].center2.X - pos.X, weightedavgs[j].center2.Y - pos.Y);
-            d = dif.Length();
+            d = (t.center2 - pos).Length();
             if (weightedavgs.Count == 1) d = 0;
 
-            if (weightedavgs[j].type == 0) t += ((dist - d) / dist) * weightedavgs[j];
+            if (t.type == 0) 
+                combined_tensor += ((total_weight-d)/(total_weight) * t);
 
-            else if (weightedavgs[j].type == 1)
-            {
-                t += ((dist - d) / dist) * Tensor.FromXY(pos, weightedavgs[j].center2);
-                //Vector2 v = Vector2.Zero;
-                //Vector2 xy = pos - weightedavgs[j].center2;
-
-                //if (x.A != 0 && x.B != 0)
-                //{
-                //    x.EigenVectors(out major, out minor);
-                //    v = major;
-
-                //    if (prev_dir == Vector2.Zero || Vector2.Dot(prev_dir, major) >= 0)
-                //        t += ((dist - d) / dist) * x;
-                //    else
-                //        t += ((dist - d) / dist) * -x;
-                //}
-            }
+            else if (t.type == 1)
+                combined_tensor += ((total_weight - d) / (total_weight) * Tensor.FromXY(pos, t.center2));
         }
-        return t;
+        return combined_tensor;
 
     }
 }
 
 public class Edge
 {
-    public Vertex a;
-    public Vertex b;
+    public Vector2 a;
+    public Vector2 b;
 
     public Vector2 direction;
 
     public Streamline streamline;
 
-    public Edge(Streamline stream, Vertex v1, Vertex v2)
+    public Edge(Streamline stream, Vector2 v1, Vector2 v2)
     {
         a = v1;
         b = v2;
         streamline = stream;
-        direction = Vector2.Normalize(b.pos - a.pos);
-    }
-
-    public Edge MakeEdge(Vertex v1, Vertex v2, Streamline stream) {
-        var e = new Edge(stream, v1, v2);
-
-        v1.edges.Add(e);
-        v2.edges.Add(e);
-
-        return e;
+        direction = Vector2.Normalize(b - a);
     }
 }
 
-public class Vertex {
-    public Vector2 pos;
-    public List<Edge> edges = new List<Edge>();
-    public Vertex(Vector2 p) => pos = p;
-}
-
-public class Seed: FastPriorityQueueNode
+public class Seed: StablePriorityQueueNode
 {
     public Vector2 pos;
-    public Vector2 field;
-    public Vector2 alt_field;
+    public bool tracingMajor;
 
-    public Seed(Vector2 start, Vector2 main, Vector2 alt)
+    public Seed(Vector2 start, bool t)
     {
         pos = start;
-        field = main;
-        alt_field = alt;
+        tracingMajor = t;
     }
 
 }
 
 public class Streamline {
-    public HashSet<Vertex> vertices = new HashSet<Vertex>();
+    public HashSet<Vector2> vertices = new HashSet<Vector2>();
 
-    public Vertex first { get; private set; }
-    public Vertex last { get; private set; }
+    public Vector2 first;
+    public Vector2 last;
 
-    public Streamline(Vertex v1) {
+    public Streamline(Vector2 v1) {
         first = v1;
         last = v1;
 
         vertices.Add(v1);
+    }
+
+    public Edge Extend(Vector2 v) {
+        vertices.Add(v);
+        var temp = last;
+        last = v;
+        return new Edge(this, temp, last);
     }
 }

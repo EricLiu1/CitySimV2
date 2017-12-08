@@ -67,7 +67,7 @@
       <IncludeInPackage>true</IncludeInPackage>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
-    <Compile Include="EmptyClass.cs" />
+    <Compile Include="RoadBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
