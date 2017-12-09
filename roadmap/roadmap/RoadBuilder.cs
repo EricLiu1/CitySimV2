@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
 using System.Windows.Forms;
@@ -21,16 +22,28 @@ namespace roadmap
         public int width;
         public int height;
 
+        public List<Tensor> polyline_river;
+        public HashSet<Edge> test_river;
         public RoadBuilder()
         {
             streams = new List<Streamline>();
             all_edges = new HashSet<Edge>();
             tensors = new List<Tensor>();
             all_vertices = new List<Vector2>();
+            polyline_river = new List<Tensor>();
+            test_river = new HashSet<Edge>();
+
             initialized = false;
 
             terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
             terrainMap.Size = new Size(terrainMap.Image.Width, terrainMap.Image.Height);
+
+            //gridline tensors
+            tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI / 4, new Vector2(200f, 50f)));
+            tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(400f, 450f)));
+            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
+            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(100f, 90f)));
+            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(370f, 430f)));
         }
 
         public Color GetColor(int x, int y) 
@@ -42,13 +55,228 @@ namespace roadmap
 
         }
 
-        public void setDimensions(int width, int height) {
+        public void setDimensions(int width, int height)
+        {
+            bool recalc = false;
+            if (width != this.width || height != this.height)
+                recalc = true;
+
             this.width = width;
             this.height = height;
+
+            if (recalc)
+            {
+                //generate_poly_lines();
+                recalc = false;
+            }
         }
 
+        public void generate_poly_lines() {
+            polyline_river.Clear();
+            test_river.Clear();
+            int x_corner_1 = 0;
+            int y_corner_1 = 0;
+
+            bool check1 = false;
+            for (int i = 1; i < width; ++i)
+            {
+                for (int j = 1; j < height; ++j)
+                {
+                    if (GetColor(i, j).R == 0)
+                    {
+                        x_corner_1 = i;
+                        y_corner_1 = j - 1;
+                        check1 = true;
+                        break;
+                    }
+                }
+
+                if (check1) break;
+            }
+
+            int x_corner_2 = 0;
+            int y_corner_2 = 0;
+
+            bool check2 = false;
+            for (int i = width - 2; i >= 0; i--) 
+            {
+                for (int j = height - 2; j >= 0; j--) 
+                {
+                    if (GetColor(i, j).R == 0)
+                    {
+                        x_corner_2 = i;
+                        y_corner_2 = j + 1;
+                        check2 = true;
+                        break;
+                    }
+                }
+
+                if (check2) break;
+            }
+
+            Vector2 corner1 = new Vector2(x_corner_1, y_corner_1);
+            Vector2 corner2 = new Vector2(x_corner_2, y_corner_2);
+
+            traverse_river(corner1, true, true);
+            traverse_river(corner1, false, true);
+            traverse_river(corner2, true, false);
+            traverse_river(corner2, false, false);
+
+            HashSet<Edge> redundant = new HashSet<Edge>();
+            foreach (var e in test_river) 
+            {
+                foreach (var f in test_river)
+                {
+                    if (e != f && e.b == f.a)
+                    {
+                        if ( (Vector2.Normalize(e.b - e.a) - Vector2.Normalize(f.b - f.a)).Length() < 0.0005f )
+                        {
+                            e.b = f.b;
+                            redundant.Add(f);
+                        }
+                    }
+                }
+            }
+
+            foreach (var e in redundant) {
+                test_river.Remove(e);
+            }
+
+            foreach (var e in test_river) {
+                Vector2 dif = new Vector2(e.b.X - e.a.X, e.b.Y - e.a.Y);
+                double theta = getAngle(dif.X, dif.Y);
+                polyline_river.Add(Tensor.FromRTheta(dif.Length(), theta, e.a));
+            }
+        }
+
+        public void traverse_river(Vector2 corner, bool up, bool over) {
+            
+            if(corner.X < 2 || corner.X > width - 2 || corner.Y < 2 || corner.Y > height - 2) {
+                return;
+            }
+
+            int dir_x, dir_y;
+            check_surroundings(out dir_x, out dir_y, corner, up, over);
+            Vector2 next = new Vector2(corner.X + dir_x, corner.Y + dir_y);
+
+            test_river.Add(new Edge(corner, next));
+            traverse_river(next, up, over);
+        }
+
+        public double getAngle(float delta_x, float delta_y) 
+        {
+            if(delta_x > 0) {
+                if(delta_y < 0) 
+                {
+                    return 7 * Math.PI / 4;    
+                }
+                else if (delta_y > 0)
+                {
+                    return Math.PI / 4;
+                }
+                else {
+                    return 0;
+                }
+            }
+            else if(delta_x < 0) {
+                if (delta_y < 0)
+                {
+                    return 5 * Math.PI / 4;
+                }
+                else if (delta_y > 0)
+                {
+                    return 3 * Math.PI / 4;
+                }
+                else
+                {
+                    return Math.PI;
+                }
+            }
+            else {
+                if (delta_y < 0)
+                {
+                    return Math.PI / 2;
+                }
+                else if (delta_y > 0)
+                {
+                    return 3 * Math.PI / 2;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
+        public void check_surroundings(out int dir_x, out int dir_y, Vector2 corner, bool up, bool over) {
+            bool r = false, r_up = false, r_down = false;
+
+            if (GetColor((int)corner.X + 1, (int)corner.Y).R > 0) r = true;
+            if (GetColor((int)corner.X + 1, (int)corner.Y - 1).R > 0) r_up = true;
+            if (GetColor((int)corner.X + 1, (int)corner.Y + 1).R > 0) r_down = true;
+
+            if(!r && !r_up && !r_down) {
+                dir_x = 0;
+                dir_y = -1;
+            }
+            else if(r) {
+                dir_x = 1;
+                dir_y = 0;
+            }
+            else if(r_up) {
+                dir_x = 1;
+                dir_y = -1;
+            }
+            else {
+                dir_x = 1;
+                dir_y = 1;
+            }
+
+            if(!up) {
+                bool d = false, d_l = false, l = false;
+                if (GetColor((int)corner.X, (int)corner.Y + 1).R > 0) d = true;
+                if (GetColor((int)corner.X - 1, (int)corner.Y + 1).R > 0) d_l = true;
+                if (GetColor((int)corner.X - 1, (int)corner.Y).R > 0) l = true;
+
+                if(over) {
+                    if (d)
+                    {
+                        dir_x = 0;
+                        dir_y = 1;
+                    }
+                    else if (d_l)
+                    {
+                        dir_x = -1;
+                        dir_y = 1;
+                    }
+                    else
+                    {
+                        dir_x = -1;
+                        dir_y = 0;
+                    }
+                }
+                else {
+                    if (l)
+                    {
+                        dir_x = -1;
+                        dir_y = 0;
+                    }
+                    else if (d_l)
+                    {
+                        dir_x = -1;
+                        dir_y = 1;
+                    }
+                    else
+                    {
+                        dir_x = 0;
+                        dir_y = 1;
+                    }
+                }
+            }
+        }
         public void Rk4_sample_field(out Vector2 major, out Vector2 minor, Vector2 point, Vector2 prev_dir, List<Tensor> w)
         {
+            w.AddRange(polyline_river);
+
             Vector2 k1_maj, k2_maj, k3_maj, k4_maj;
             Vector2 k1_min, k2_min, k3_min, k4_min;
 
@@ -77,6 +305,8 @@ namespace roadmap
 
         public void Rk4_sample_field_decay(out Vector2 major, out Vector2 minor, Vector2 point, Vector2 prev_dir, List<Tensor> w)
         {
+            w.AddRange(polyline_river);
+
             Vector2 k1_maj, k2_maj, k3_maj, k4_maj;
             Vector2 k1_min, k2_min, k3_min, k4_min;
 
@@ -112,17 +342,14 @@ namespace roadmap
 
         public void InitializeSeeds(Vector2 min, Vector2 max) 
         {
+            Console.WriteLine("Starting timer");
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+
             if (initialized)
                 return;
 
             initialized = true;
-
-            //gridline tensors
-            tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI/4, new Vector2(30f, 50f)));
-            tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(80f, 50f)));
-            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(50f, 50f)));
-            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(20f, 90f)));
-            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(70f, 30f)));
 
             var diff = max - min;
             Vector2 major, minor;
@@ -131,6 +358,8 @@ namespace roadmap
 
             var seeds = RandomSeeds(min, max);
             SeedRunner(min, max, seeds, true, true);
+            timer.Stop();
+            Console.WriteLine("Done! Time elapsed: " + timer.Elapsed);
         }
 
         private static IEnumerable<Seed> RandomSeeds(Vector2 min, Vector2 max)
@@ -138,7 +367,7 @@ namespace roadmap
             var Dif = max - min;
 
             Random r = new Random();
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 250; i++)
             {
                 var p = new Vector2((float)r.Next((int)min.X, (int)max.X), (float)r.Next((int)min.Y, (int)max.Y)) + min;
 
@@ -146,7 +375,6 @@ namespace roadmap
                     i--;
                 else
                     yield return new Seed(p, true);
-
             }
         }
 
@@ -163,7 +391,7 @@ namespace roadmap
             while (seeds.Count > 0)
             {
                 Seed s = (Seed)seeds.Dequeue();
-
+                //Console.WriteLine(seeds.Count);
                 if (forward)
                 {
                     var stream = Trace(min, max, s, false, seeds, s.tracingMajor);
@@ -212,7 +440,6 @@ namespace roadmap
 
             Vector2 position = seed.pos;
             all_vertices.Add(position);
-            //Console.WriteLine("stream start" + seed.pos);
 
             Vector2 prev_direction = Vector2.Zero;
             Vector2 previous = prev_direction;
@@ -224,22 +451,30 @@ namespace roadmap
                 Vector2 major, minor;
                 previous = prev_direction;
                 float lengthSum = 0;
-                for (var j = 0; j < 10 && lengthSum < maxSegmentLength; j++)
-                {
-                    Rk4_sample_field_decay(out major, out minor, position, previous, tensors);
-                    if (tracingMajor)
-                        d = major;
-                    else
-                        d = minor;
-                    var l = d.Length();
-                    lengthSum += d.Length();
-                    direction += d;
-                    previous = direction;
 
-                    //escape if the curvature is too much
-                    if (Vector2.Dot(prev_direction, d / l) < 0.9961f)
-                        break;
-                }
+                Rk4_sample_field(out major, out minor, position, previous, tensors);
+
+                if (tracingMajor)
+                    direction = major;
+                else
+                    direction = minor;
+                
+                //for (var j = 0; j < 10 && lengthSum < maxSegmentLength; j++)
+                //{
+                //    Rk4_sample_field_decay(out major, out minor, position, previous, tensors);
+                //    if (tracingMajor)
+                //        d = major;
+                //    else
+                //        d = minor;
+                //    var l = d.Length();
+                //    lengthSum += d.Length();
+                //    direction += d;
+                //    previous = direction;
+
+                //    //escape if the curvature is too much
+                //    if (Vector2.Dot(prev_direction, d / l) < 0.9961f)
+                //        break;
+                //}
 
                 if (i == 0 && reverse)
                     direction = -direction;
@@ -247,16 +482,20 @@ namespace roadmap
                 //degenerate step check
                 var segmentLength = direction.Length();
                 if (segmentLength < 0.00005f)
+                {
                     break;
+                }
 
                 //Excessive step check
                 if (segmentLength > maxSegmentLength)
                 {
-                    //Console.WriteLine("here");
                     direction /= segmentLength * maxSegmentLength;
                     segmentLength = maxSegmentLength;
                 }
 
+                if(GetColor((int)(position.X), (int)(position.Y)).R == 0) {
+                    break;
+                }
                 //Step along path
                 //Vector2 temp = position;
                 position += direction;

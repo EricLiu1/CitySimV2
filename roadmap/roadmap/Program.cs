@@ -54,7 +54,7 @@ public class GtkCairo
         Box box = new HBox(true, 0);
         box.Add(a);
         w.Add(box);
-        w.Resize(500, 500);
+        w.Resize(800, 800);
         w.ShowAll();
 
         Gtk.Application.Run();
@@ -81,44 +81,43 @@ public class CairoGraphic : DrawingArea
         /* Draw Highways */
         gr.LineWidth = 0.005;
         drawHighways(gr);
+
     }
 
     public void drawTerrain(Context gr) 
     {
+        Cairo.Color normal_color = new Cairo.Color(0.9, 0.9, 0.9, 1);
+        Cairo.Color water_color = new Cairo.Color(0.8, 0.8, 1.0, 1);
+
         for (double i = 0; i < width; ++i)
         {
             int k = (int)i;
             bool water = false;
 
-            Cairo.Color normal_color = new Cairo.Color(0.9, 0.9, 0.9, 1);
-            Cairo.Color water_color = new Cairo.Color(0.8, 0.8, 1.0, 1);
-
             gr.SetSourceColor(normal_color);
             PointD start2 = new PointD(i / width, 0);
-            gr.LineTo(start2);
+            gr.MoveTo(start2);
 
             PointD end2 = new PointD(i / width, 1 / height);
             for (double j = 1; j < height; ++j)
             {
-                if (r.GetColor((int)i, (int) j).GetHue() > 60.0f && !water)
+                if (r.GetColor((int)i, (int) j).R == 0 && !water)
                 {
                     gr.LineTo(end2);
                     gr.Stroke();
-
                     gr.SetSourceColor(water_color);
                     start2.Y = j / height;
-                    gr.LineTo(start2);
+                    gr.MoveTo(start2);
                     end2.Y = j / height;
                     water = true;
                 }
-                else if (r.GetColor((int)i, (int)j).GetHue() < 60.0f && water)
+                else if (r.GetColor((int)i, (int)j).R > 0 && water)
                 {
                     gr.LineTo(end2);
                     gr.Stroke();
-
                     gr.SetSourceColor(normal_color);
                     start2.Y = j / height;
-                    gr.LineTo(start2);
+                    gr.MoveTo(start2);
                     end2.Y = j / height;
                     water = false;
                 }
@@ -129,7 +128,9 @@ public class CairoGraphic : DrawingArea
             }
             gr.LineTo(end2);
             gr.Stroke();
+
         }
+
     }
 
     public void drawHighways(Context gr) 
@@ -138,8 +139,8 @@ public class CairoGraphic : DrawingArea
         HashSet<Edge> all_edges = getStreamlines();
         foreach (var e in all_edges)
         {
-            PointD start = new PointD(e.a.X / 100, e.a.Y / 100);
-            PointD end = new PointD(e.b.X / 100, e.b.Y / 100);
+            PointD start = new PointD(e.a.X / width, e.a.Y / height);
+            PointD end = new PointD(e.b.X / width, e.b.Y / height);
             gr.MoveTo(start);
             gr.LineTo(end);
         }
@@ -162,7 +163,7 @@ public class CairoGraphic : DrawingArea
 
     public HashSet<Edge> getStreamlines() 
     {
-        r.InitializeSeeds(new Vector2(0, 0), new Vector2(100, 100));
+        r.InitializeSeeds(new Vector2(0, 0), new Vector2(width, height));
         return r.all_edges;
     }
 
@@ -180,7 +181,6 @@ public class CairoGraphic : DrawingArea
         height = h;
         draw(g, w, h);
         g.Dispose();
-
         return true;
     }
 

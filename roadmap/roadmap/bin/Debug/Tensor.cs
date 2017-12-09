@@ -146,7 +146,7 @@ public class Edge
 {
     public Vector2 a;
     public Vector2 b;
-
+    public bool remove = false;
     public Vector2 direction;
 
     public Streamline streamline;
@@ -156,6 +156,12 @@ public class Edge
         a = v1;
         b = v2;
         streamline = stream;
+        direction = Vector2.Normalize(b - a);
+    }
+    public Edge(Vector2 v1, Vector2 v2)
+    {
+        a = v1;
+        b = v2;
         direction = Vector2.Normalize(b - a);
     }
 }
