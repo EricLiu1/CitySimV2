@@ -2,23 +2,28 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Numerics;
 using System.Windows.Forms;
+using CSharp.DataStructures.QuadTreeSpace;
 //using Priority_Queue;
 
 namespace roadmap
 {
     public class RoadBuilder
     {
+        public QuadTree<Vector2> s;
         public HashSet<Edge> all_edges;
         public List<Vector2> all_vertices;
         public List<Streamline> streams;
         public List<Tensor> tensors;
         public bool initialized;
+        public Tuple<Vector2, Vector2>[,] eigen_cache;
 
         public PictureBox densityMap = new PictureBox();
         public PictureBox terrainMap = new PictureBox();
+        public Bitmap terrain;
         public int width;
         public int height;
 
@@ -32,26 +37,30 @@ namespace roadmap
             all_vertices = new List<Vector2>();
             polyline_river = new List<Tensor>();
             test_river = new HashSet<Edge>();
-
+            eigen_cache = new Tuple<Vector2, Vector2>[800, 800];
+            for (int i = 0; i < 800; i++)
+                for (int j = 0; j < 800; j++)
+                    eigen_cache[i, j] = new Tuple<Vector2, Vector2>(Vector2.Zero, Vector2.Zero);
             initialized = false;
-
-            terrainMap.Image = System.Drawing.Image.FromFile("terrain_map.png");
-            terrainMap.Size = new Size(terrainMap.Image.Width, terrainMap.Image.Height);
+            terrain = new Bitmap(Image.FromFile("terrain_map.png"), 800, 800);
+            terrainMap.Image = terrain;
+            terrainMap.Size = new Size(800, 800);
 
             //gridline tensors
-            tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI / 4, new Vector2(200f, 50f)));
+            //tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI / 4, new Vector2(200f, 50f)));
             tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(400f, 450f)));
             tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
-            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(100f, 90f)));
-            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(370f, 430f)));
+            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(100f, 90f)));
+            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(370f, 430f)));
         }
 
         public Color GetColor(int x, int y) 
         {
-            float stretch_X = terrainMap.Width / (float)width;
-            float stretch_Y = terrainMap.Height / (float)height;
-
-            return ((Bitmap)terrainMap.Image).GetPixel((int)(stretch_X * x), (int)(stretch_Y * y));
+            //float stretch_X = terrainMap.Width / (float)width;
+            //float stretch_Y = terrainMap.Height / (float)height;
+            //Console.WriteLine(x + " "+ y);
+            //Bitmap b = new Bitmap(terrainMap.Image, 800, 800);
+            return terrain.GetPixel((int)( x), (int)( y));
 
         }
 
@@ -275,7 +284,7 @@ namespace roadmap
         }
         public void Rk4_sample_field(out Vector2 major, out Vector2 minor, Vector2 point, Vector2 prev_dir, List<Tensor> w)
         {
-            w.AddRange(polyline_river);
+            //w.AddRange(polyline_river);
 
             Vector2 k1_maj, k2_maj, k3_maj, k4_maj;
             Vector2 k1_min, k2_min, k3_min, k4_min;
@@ -305,11 +314,26 @@ namespace roadmap
 
         public void Rk4_sample_field_decay(out Vector2 major, out Vector2 minor, Vector2 point, Vector2 prev_dir, List<Tensor> w)
         {
-            w.AddRange(polyline_river);
+            //w.AddRange(polyline_river);
 
             Vector2 k1_maj, k2_maj, k3_maj, k4_maj;
             Vector2 k1_min, k2_min, k3_min, k4_min;
+            var seg_pos = point;
+            if (seg_pos.X >= 0 && seg_pos.X < 800 && seg_pos.Y >= 0 && seg_pos.Y < 800)
+            {
+                var cache_element = eigen_cache[(int)(seg_pos).X, (int)(seg_pos).Y];
+                if (cache_element.Equals(new Tuple<Vector2, Vector2>(Vector2.Zero, Vector2.Zero)))
+                {
+                    Tensor.SampleDecayWeights(point, w).EigenVectors(out major, out minor); eigen_cache[(int)seg_pos.X, (int)seg_pos.Y] = new Tuple<Vector2, Vector2>(major, minor);
+                    eigen_cache[(int)(seg_pos).X, (int)(seg_pos).Y] = new Tuple<Vector2, Vector2>(major, minor);
+                }
 
+                else
+                {
+                    major = cache_element.Item1;
+                    minor = cache_element.Item2;
+                }
+            }
             Tensor.SampleDecayWeights(point, w).EigenVectors(out major, out minor);
             k1_maj = corrected_vector(major, prev_dir);
             k1_min = corrected_vector(minor, prev_dir);
@@ -343,6 +367,7 @@ namespace roadmap
         public void InitializeSeeds(Vector2 min, Vector2 max) 
         {
             Console.WriteLine("Starting timer");
+            Console.WriteLine(min + " " + max);
             Stopwatch timer = new Stopwatch();
             timer.Start();
 
@@ -366,10 +391,10 @@ namespace roadmap
         {
             var Dif = max - min;
 
-            Random r = new Random();
-            for (int i = 0; i < 250; i++)
+            Random r = new Random(5);
+            for (int i = 0; i < 30; i++)
             {
-                var p = new Vector2((float)r.Next((int)min.X, (int)max.X), (float)r.Next((int)min.Y, (int)max.Y)) + min;
+                var p = new Vector2(r.Next((int)min.X, (int)max.X), r.Next((int)min.Y, (int)max.Y)) + min;
 
                 if (p.X < min.X || p.Y < min.Y || p.X > max.X || p.Y > max.Y)
                     i--;
@@ -380,6 +405,7 @@ namespace roadmap
 
         public void SeedRunner(Vector2 min, Vector2 max, IEnumerable<Seed> initialSeeds, bool forward, bool backward)
         {
+            Console.Write(terrainMap.Width + " X " + terrainMap.Height);
             Queue seeds = new Queue();
 
             foreach (var initialSeed in initialSeeds)
@@ -391,7 +417,7 @@ namespace roadmap
             while (seeds.Count > 0)
             {
                 Seed s = (Seed)seeds.Dequeue();
-                //Console.WriteLine(seeds.Count);
+                Console.WriteLine(seeds.Count + " " + s.pos);
                 if (forward)
                 {
                     var stream = Trace(min, max, s, false, seeds, s.tracingMajor);
@@ -400,10 +426,10 @@ namespace roadmap
                         streams.Add(stream);
                     }
 
-                    var stream2 = Trace(min, max, s, false, seeds, false);
-                    if(stream2 != null) {
-                        streams.Add(stream2);
-                    }
+                    //var stream2 = Trace(min, max, s, false, seeds, false);
+                    //if(stream2 != null) {
+                    //    streams.Add(stream2);
+                    //}
                 }
 
                 if (backward)
@@ -414,12 +440,12 @@ namespace roadmap
                         streams.Add(stream);
                         //streamCreated(stream);
                     }
-                    var stream2 = Trace(min, max, s, true, seeds, false);
-                    if (stream2 != null)
-                    {
-                        streams.Add(stream2);
-                        //streamCreated(stream);
-                    }
+                    //var stream2 = Trace(min, max, s, true, seeds, false);
+                    //if (stream2 != null)
+                    //{
+                    //    streams.Add(stream2);
+                    //    //streamCreated(stream);
+                    //}
                 }
                 ++i;
             }
@@ -429,95 +455,134 @@ namespace roadmap
 
         public Streamline Trace(Vector2 min, Vector2 max, Seed seed, bool reverse, Queue seeds, bool tracingMajor)
         {
-            float maxSegmentLength = 0.5f;
-            float mergeDistance = 1.5f;
-            float cosineSearchAngle = 2;
+            int maxSegmentLength = 10;
+            int mergeDistance = 25;
+            float cosineSearchAngle = 0.392699f;
 
-            Streamline stream = new Streamline(seed.pos);
+            var ss = FindClosestVertex(seed.pos, Vector2.Zero, mergeDistance, cosineSearchAngle, Vector2.Zero);
+            Streamline stream;
+            //stream = new Streamline(seed.pos);
+
+            if (ss.Equals(Vector2.Zero))
+                stream = new Streamline(seed.pos);
+            else
+            {
+                //stream = new Streamline(ss);
+                all_edges.Add(new Edge(null, seed.pos, ss));
+                return null;
+            }
+
 
             var seedingDistance = float.MaxValue;
-            var direction = Vector2.Zero;
+            var segment = Vector2.Zero;
 
             Vector2 position = seed.pos;
             all_vertices.Add(position);
 
             Vector2 prev_direction = Vector2.Zero;
-            Vector2 previous = prev_direction;
+            Vector2 p;
 
             //Extended naieve tracing (accumulate naieve traces, stop once we hit sample OR length limit)
-            Vector2 d;
-            for (var i = 0; i < 100; i++)
+            Vector2 temp;
+            for (var i = 0; i < 500; i++)
             {
                 Vector2 major, minor;
-                previous = prev_direction;
-                float lengthSum = 0;
+                p = prev_direction;
 
-                Rk4_sample_field(out major, out minor, position, previous, tensors);
+                //Rk4_sample_field(out major, out minor, position, previous, tensors);
 
-                if (tracingMajor)
-                    direction = major;
-                else
-                    direction = minor;
-                
-                //for (var j = 0; j < 10 && lengthSum < maxSegmentLength; j++)
-                //{
-                //    Rk4_sample_field_decay(out major, out minor, position, previous, tensors);
-                //    if (tracingMajor)
-                //        d = major;
-                //    else
-                //        d = minor;
-                //    var l = d.Length();
-                //    lengthSum += d.Length();
-                //    direction += d;
-                //    previous = direction;
+                //if (tracingMajor)
+                //    direction = major;
+                //else
+                //direction = minor;
+                var segmentLength = 0.0f;
+                segment = Vector2.Zero;
+                for (var j = 0; j < 10 && segmentLength < maxSegmentLength; j++)
+                {
 
-                //    //escape if the curvature is too much
-                //    if (Vector2.Dot(prev_direction, d / l) < 0.9961f)
-                //        break;
-                //}
+                    var seg_pos = position + segment;
+                    if (seg_pos.X >= min.X && seg_pos.X < max.X && seg_pos.Y >= min.Y && seg_pos.Y < max.Y)
+                    {
+                        var cache_element = eigen_cache[(int)(position + segment).X, (int)(position + segment).Y];
+                        if (cache_element.Equals(new Tuple<Vector2, Vector2>(Vector2.Zero, Vector2.Zero)))
+                        {
+                            Rk4_sample_field(out major, out minor, position + segment, p, tensors);
+                            eigen_cache[(int)seg_pos.X, (int)seg_pos.Y] = new Tuple<Vector2, Vector2>(major, minor);
+                            if (tracingMajor)
+                                temp = major;
+                            else
+                                temp = minor;
+                        }
 
+                        else
+                        {
+                            if (tracingMajor)
+                                temp = cache_element.Item1;
+                            else
+                                temp = cache_element.Item2;
+                        }
+                        segment += temp;
+                        segmentLength = segment.Length();
+                        p = temp;
+                        if (Vector2.Dot(prev_direction, temp / temp.Length()) < 0.9961f)
+                            break;
+                    }
+                    else break;
+                   
+                }
+                if (!segmentLength.Equals(segment.Length()))
+                {
+                    Console.WriteLine("gets here");
+                    break;
+                }
                 if (i == 0 && reverse)
-                    direction = -direction;
+                    segment = -segment;
 
                 //degenerate step check
-                var segmentLength = direction.Length();
-                if (segmentLength < 0.00005f)
+                if (segmentLength < 0.000005f )
                 {
+                    Console.WriteLine("gets here1");
                     break;
                 }
 
                 //Excessive step check
                 if (segmentLength > maxSegmentLength)
                 {
-                    direction /= segmentLength * maxSegmentLength;
+                    segment = segment/segmentLength * maxSegmentLength;
                     segmentLength = maxSegmentLength;
                 }
 
-                if(GetColor((int)(position.X), (int)(position.Y)).R == 0) {
+                if (GetColor((int)position.X, (int)position.Y).R == 0)
+                {
+                    Console.WriteLine("gets here coloor");
+
                     break;
                 }
+
+
                 //Step along path
                 //Vector2 temp = position;
-                position += direction;
+                position += segment;
                 seedingDistance += segmentLength;
 
-
                 //Create the segment and break if it says so
-                if (CreateAndCheckEdge(min, max, stream, position, direction, maxSegmentLength, mergeDistance, cosineSearchAngle))
+                if (CreateAndCheckEdge(min, max, stream, position, Vector2.Normalize(segment), maxSegmentLength, mergeDistance, cosineSearchAngle)) {
+                    Console.WriteLine("gets here2");
                     break;
+                }
+    
 
                 //Accumulate seeds to trace into the alternative field
-                //var seedSeparation = 50;
-                //if (seedingDistance > seedSeparation)
-                //{
-                //    seedingDistance = 0;
-                //    Seed s = new Seed(position, !seed.tracingMajor);
-                //    seeds.Enqueue(s);
-                //}
+                var seedSeparation = 50;
+                if (seedingDistance > seedSeparation)
+                {
+                    seedingDistance = 0;
+                    seeds.Enqueue(new Seed(position, !seed.tracingMajor));
+                }
 
-                prev_direction = direction;
+                prev_direction = segment;
             }
-
+            Console.WriteLine(position);
             return stream;
         }
 
@@ -530,6 +595,10 @@ namespace roadmap
             //check if distance too short
             if (pos.X < min.X || pos.Y < min.Y || pos.X > max.X || pos.Y > max.Y)
             {
+                Console.Write("gets here2.1");
+                Console.WriteLine(pos);
+
+
                 stop_stream = true;
                 if ((pos - stream.last).Length() < maxSegmentLength) 
                     return false;
@@ -568,7 +637,13 @@ namespace roadmap
             //check and handle intersection
             //Console.Write(stop_stream);
 
-            if (!closestVertex.Equals(Vector2.Zero)) stop_stream = true;
+            if (!closestVertex.Equals(Vector2.Zero))
+            {
+                Console.Write("gets here2.2");
+                Console.WriteLine(closestVertex);
+
+                stop_stream = true;
+            }
             else closestVertex = pos;
 
             //Console.Write(stop_stream);
@@ -591,8 +666,18 @@ namespace roadmap
                     }
                 }
 
-                if (e == null || stream.first.Equals(closestVertex)) stop_stream = true;
-                all_edges.Add(e);
+                if (e == null)
+                {
+                    Console.WriteLine("gets here2.3");
+                    stop_stream = true;
+                }
+                else
+                    all_edges.Add(e);
+
+            }
+            if (stream.first.Equals(stream.last))
+            {
+                stop_stream = true;
 
             }
             //Console.Write(stop_stream + "\n");
@@ -645,7 +730,7 @@ namespace roadmap
 
             foreach (var vertex in all_vertices)
             {
-                if (vertex.Equals(last) || vertex.Equals(pos)) continue;
+                if (last != Vector2.Zero && (vertex.Equals(last) || vertex.Equals(pos))) continue;
 
                 var diff = vertex - pos;
                 var l = diff.Length();

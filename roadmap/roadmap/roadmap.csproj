@@ -58,6 +58,9 @@
       <HintPath>..\packages\OptimizedPriorityQueue.4.1.1\lib\net45\Priority Queue.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="CSharp.DataStructures">
+      <HintPath>..\packages\CSharp.DataStructures.1.2.0.0\lib\net40\CSharp.DataStructures.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs">

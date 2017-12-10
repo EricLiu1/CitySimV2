@@ -69,7 +69,7 @@ public class CairoGraphic : DrawingArea
     public List<Tensor> polyline;
     public RoadBuilder r = new RoadBuilder();
 
-    public void draw(Context gr, int w, int h)
+    public void draw(Context gr)
     {
         gr.Scale(width, height);
         r.setDimensions(width, height);
@@ -179,7 +179,7 @@ public class CairoGraphic : DrawingArea
 
         width = w;
         height = h;
-        draw(g, w, h);
+        draw(g);
         g.Dispose();
         return true;
     }
