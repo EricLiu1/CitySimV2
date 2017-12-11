@@ -578,8 +578,8 @@ namespace roadmap
 
                 //Accumulate seeds to trace into the alternative field
                 Color dense = GetDensity((int)position.X, (int)position.Y);
-                double yo = (dense.R + dense.G + dense.B)/3;
-                var seedSeparation = 20 + 80 * (1 - yo);
+                double yo = dense.GetBrightness();
+                var seedSeparation = 100 + 100 * (1 - yo);
                 if (seedingDistance > seedSeparation)
                 {
                     seedingDistance = 0;
