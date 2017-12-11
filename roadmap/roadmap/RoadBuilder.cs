@@ -6,14 +6,12 @@ using System.Diagnostics.Contracts;
 using System.Drawing;
 using System.Numerics;
 using System.Windows.Forms;
-using CSharp.DataStructures.QuadTreeSpace;
 //using Priority_Queue;
 
 namespace roadmap
 {
     public class RoadBuilder
     {
-        public QuadTree<Vector2> s;
         public HashSet<Edge> all_edges;
         public List<Vector2> all_vertices;
         public List<Streamline> streams;
@@ -48,10 +46,10 @@ namespace roadmap
 
             //gridline tensors
             //tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI / 4, new Vector2(200f, 50f)));
-            //tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(400f, 450f)));
-            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
+            tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(400f, 450f)));
+            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
             //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(100f, 90f)));
-            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(400f, 400f)));
+            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(400f, 400f)));
         }
 
         public Color GetColor(int x, int y) 
@@ -320,22 +318,7 @@ namespace roadmap
 
             Vector2 k1_maj, k2_maj, k3_maj, k4_maj;
             Vector2 k1_min, k2_min, k3_min, k4_min;
-            var seg_pos = point;
-            if (seg_pos.X >= 0 && seg_pos.X < 800 && seg_pos.Y >= 0 && seg_pos.Y < 800)
-            {
-                var cache_element = eigen_cache[(int)(seg_pos).X, (int)(seg_pos).Y];
-                if (cache_element.Equals(new Tuple<Vector2, Vector2>(Vector2.Zero, Vector2.Zero)))
-                {
-                    Tensor.SampleDecayWeights(point, w).EigenVectors(out major, out minor); eigen_cache[(int)seg_pos.X, (int)seg_pos.Y] = new Tuple<Vector2, Vector2>(major, minor);
-                    eigen_cache[(int)(seg_pos).X, (int)(seg_pos).Y] = new Tuple<Vector2, Vector2>(major, minor);
-                }
-
-                else
-                {
-                    major = cache_element.Item1;
-                    minor = cache_element.Item2;
-                }
-            }
+           
             Tensor.SampleDecayWeights(point, w).EigenVectors(out major, out minor);
             k1_maj = corrected_vector(major, prev_dir);
             k1_min = corrected_vector(minor, prev_dir);
@@ -379,9 +362,9 @@ namespace roadmap
             initialized = true;
 
             var diff = max - min;
-            Vector2 major, minor;
+            //Vector2 major, minor;
 
-            Rk4_sample_field(out major, out minor, min, Vector2.Zero, tensors);
+            //Rk4_sample_field(out major, out minor, min, Vector2.Zero, tensors);
 
             var seeds = RandomSeeds(min, max);
             SeedRunner(min, max, seeds, true, true);
@@ -394,7 +377,7 @@ namespace roadmap
             var Dif = max - min;
 
             Random r = new Random(5);
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 10; i++)
             {
                 var p = new Vector2(r.Next((int)min.X, (int)max.X), r.Next((int)min.Y, (int)max.Y)) + min;
 
@@ -470,8 +453,10 @@ namespace roadmap
             else
             {
                 //stream = new Streamline(ss);
-                //all_edges.Add(new Edge(null, seed.pos, ss));
-                return null;
+                all_edges.Add(new Edge(null, seed.pos, ss));
+                stream = new Streamline(seed.pos);
+                stream.last = ss;
+                return stream;
             }
 
 
@@ -536,7 +521,7 @@ namespace roadmap
                     segment = -segment;
 
                 //degenerate step check
-                if (segmentLength < 0.000005f)
+                if (segmentLength < 0.005f)
                 {
                     Console.WriteLine("gets here1");
                     break;
@@ -579,9 +564,16 @@ namespace roadmap
                 //Accumulate seeds to trace into the alternative field
                 Color dense = GetDensity((int)position.X, (int)position.Y);
                 double yo = dense.GetBrightness();
-                var seedSeparation = 100 + 100 * (1 - yo);
+                //Console.Write(yo + " ");
+                //var seedSeparation = 30 + 200 * (1 - yo);
+                var seedSeparation = 75;
+
+                //Console.Write(seedSeparation + " ");
+
                 if (seedingDistance > seedSeparation)
                 {
+                    //Console.Write(seedSeparation + " ");
+
                     seedingDistance = 0;
                     seeds.Enqueue(new Seed(position, !seed.tracingMajor));
                 }
