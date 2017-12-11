@@ -45,9 +45,9 @@ namespace roadmap
             density = new Bitmap(Image.FromFile("density_map.png"), 800, 800);
 
             //gridline tensors
-            //tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI / 4, new Vector2(200f, 50f)));
-            tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(400f, 450f)));
-            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
+            tensors.Add(Tensor.FromRTheta(20, Math.PI / 2, new Vector2(200f, 200f)));
+            tensors.Add(Tensor.FromRTheta(20, 3 * Math.PI / 4, new Vector2(400f, 400f)));
+            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
             //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(100f, 90f)));
             //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(400f, 400f)));
         }
@@ -352,7 +352,7 @@ namespace roadmap
         public void InitializeSeeds(Vector2 min, Vector2 max) 
         {
             Console.WriteLine("Starting timer");
-            Console.WriteLine(min + " " + max);
+            //Console.WriteLine(min + " " + max);
             Stopwatch timer = new Stopwatch();
             timer.Start();
 
@@ -390,7 +390,7 @@ namespace roadmap
 
         public void SeedRunner(Vector2 min, Vector2 max, IEnumerable<Seed> initialSeeds, bool forward, bool backward)
         {
-            Console.Write(terrainMap.Width + " X " + terrainMap.Height);
+            //Console.Write(terrainMap.Width + " X " + terrainMap.Height);
             Queue seeds = new Queue();
 
             foreach (var initialSeed in initialSeeds)
@@ -402,7 +402,7 @@ namespace roadmap
             while (seeds.Count > 0)
             {
                 Seed s = (Seed)seeds.Dequeue();
-                Console.WriteLine(seeds.Count + " " + s.pos);
+                //Console.WriteLine(seeds.Count + " " + s.pos);
                 if (forward)
                 {
                     var stream = Trace(min, max, s, false, seeds, s.tracingMajor);
@@ -523,7 +523,7 @@ namespace roadmap
                 //degenerate step check
                 if (segmentLength < 0.005f)
                 {
-                    Console.WriteLine("gets here1");
+                    //Console.WriteLine("gets here1");
                     break;
                 }
 
@@ -533,20 +533,20 @@ namespace roadmap
                     segment = segment / segmentLength * maxSegmentLength;
                     segmentLength = maxSegmentLength;
                 }
-                if ((int)position.X < 780 ){
-                    if (GetColor((int)position.X + 20, (int)position.Y).G == 0)
-                    {
-                        Console.WriteLine("gets here coloor");
+                //if ((int)position.X < 780 ){
+                //    if (GetColor((int)position.X + 20, (int)position.Y).G == 0)
+                //    {
+                //        //Console.WriteLine("gets here coloor");
 
-                        break;
-                    }
-                }
-                else if (GetColor((int)position.X, (int)position.Y).G == 0)
-                {
-                    Console.WriteLine("gets here coloor");
+                //        break;
+                //    }
+                //}
+                //else if (GetColor((int)position.X, (int)position.Y).G == 0)
+                //{
+                //    //Console.WriteLine("gets here coloor");
 
-                    break;
-                }
+                //    break;
+                //}
 
 
                 //Step along path
@@ -556,7 +556,7 @@ namespace roadmap
 
                 //Create the segment and break if it says so
                 if (CreateAndCheckEdge(min, max, stream, position, Vector2.Normalize(segment), maxSegmentLength, mergeDistance, cosineSearchAngle)) {
-                    Console.WriteLine("gets here2");
+                    //Console.WriteLine("gets here2");
                     break;
                 }
 
@@ -580,7 +580,7 @@ namespace roadmap
 
                 prev_direction = segment;
             }
-            Console.WriteLine(position);
+            //Console.WriteLine(position);
             return stream;
         }
 
@@ -593,8 +593,8 @@ namespace roadmap
             //check if distance too short
             if (pos.X < min.X || pos.Y < min.Y || pos.X > max.X || pos.Y > max.Y)
             {
-                Console.Write("gets here2.1");
-                Console.WriteLine(pos);
+                //Console.Write("gets here2.1");
+                //Console.WriteLine(pos);
 
 
                 stop_stream = true;

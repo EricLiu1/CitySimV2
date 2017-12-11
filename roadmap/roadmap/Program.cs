@@ -76,7 +76,7 @@ public class CairoGraphic : DrawingArea
 
         /* Draw Terrain */
         gr.LineWidth = 0.05;
-        drawTerrain(gr);
+        //drawTerrain(gr);
 
         /* Draw Highways */
         gr.LineWidth = 0.005;
