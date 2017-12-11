@@ -49,9 +49,9 @@ namespace roadmap
             //gridline tensors
             //tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI / 4, new Vector2(200f, 50f)));
             tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(400f, 450f)));
-            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
+            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
             //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(100f, 90f)));
-            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(370f, 430f)));
+            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(370f, 430f)));
         }
 
         public Color GetColor(int x, int y) 
@@ -392,7 +392,7 @@ namespace roadmap
             var Dif = max - min;
 
             Random r = new Random(5);
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 5; i++)
             {
                 var p = new Vector2(r.Next((int)min.X, (int)max.X), r.Next((int)min.Y, (int)max.Y)) + min;
 
@@ -455,9 +455,9 @@ namespace roadmap
 
         public Streamline Trace(Vector2 min, Vector2 max, Seed seed, bool reverse, Queue seeds, bool tracingMajor)
         {
-            int maxSegmentLength = 10;
-            int mergeDistance = 25;
-            float cosineSearchAngle = 0.392699f;
+            int maxSegmentLength = 20;
+            int mergeDistance = 30;
+            float cosineSearchAngle = 0.15f;
 
             var ss = FindClosestVertex(seed.pos, Vector2.Zero, mergeDistance, cosineSearchAngle, Vector2.Zero);
             Streamline stream;
@@ -468,7 +468,7 @@ namespace roadmap
             else
             {
                 //stream = new Streamline(ss);
-                all_edges.Add(new Edge(null, seed.pos, ss));
+                //all_edges.Add(new Edge(null, seed.pos, ss));
                 return null;
             }
 
@@ -497,16 +497,16 @@ namespace roadmap
                 //direction = minor;
                 var segmentLength = 0.0f;
                 segment = Vector2.Zero;
-                for (var j = 0; j < 10 && segmentLength < maxSegmentLength; j++)
+                for (var j = 0; j < 20 && segmentLength < maxSegmentLength; j++)
                 {
 
                     var seg_pos = position + segment;
                     if (seg_pos.X >= min.X && seg_pos.X < max.X && seg_pos.Y >= min.Y && seg_pos.Y < max.Y)
                     {
-                        var cache_element = eigen_cache[(int)(position + segment).X, (int)(position + segment).Y];
+                        var cache_element = eigen_cache[(int)(seg_pos).X, (int)(seg_pos).Y];
                         if (cache_element.Equals(new Tuple<Vector2, Vector2>(Vector2.Zero, Vector2.Zero)))
                         {
-                            Rk4_sample_field(out major, out minor, position + segment, p, tensors);
+                            Rk4_sample_field(out major, out minor, seg_pos, Vector2.Normalize(p), tensors);
                             eigen_cache[(int)seg_pos.X, (int)seg_pos.Y] = new Tuple<Vector2, Vector2>(major, minor);
                             if (tracingMajor)
                                 temp = major;
@@ -524,22 +524,17 @@ namespace roadmap
                         segment += temp;
                         segmentLength = segment.Length();
                         p = temp;
-                        if (Vector2.Dot(prev_direction, temp / temp.Length()) < 0.9961f)
+                        if (Vector2.Dot(Vector2.Normalize(prev_direction), temp / temp.Length()) < 0.9961f)
                             break;
                     }
                     else break;
-                   
-                }
-                if (!segmentLength.Equals(segment.Length()))
-                {
-                    Console.WriteLine("gets here");
-                    break;
+
                 }
                 if (i == 0 && reverse)
                     segment = -segment;
 
                 //degenerate step check
-                if (segmentLength < 0.000005f )
+                if (segmentLength < 0.000005f)
                 {
                     Console.WriteLine("gets here1");
                     break;
@@ -548,11 +543,18 @@ namespace roadmap
                 //Excessive step check
                 if (segmentLength > maxSegmentLength)
                 {
-                    segment = segment/segmentLength * maxSegmentLength;
+                    segment = segment / segmentLength * maxSegmentLength;
                     segmentLength = maxSegmentLength;
                 }
+                if ((int)position.X < 780 ){
+                    if (GetColor((int)position.X + 20, (int)position.Y).G == 0)
+                    {
+                        Console.WriteLine("gets here coloor");
 
-                if (GetColor((int)position.X, (int)position.Y).R == 0)
+                        break;
+                    }
+                }
+                else if (GetColor((int)position.X, (int)position.Y).G == 0)
                 {
                     Console.WriteLine("gets here coloor");
 
@@ -573,7 +575,7 @@ namespace roadmap
     
 
                 //Accumulate seeds to trace into the alternative field
-                var seedSeparation = 50;
+                var seedSeparation = 100;
                 if (seedingDistance > seedSeparation)
                 {
                     seedingDistance = 0;
@@ -600,12 +602,12 @@ namespace roadmap
 
 
                 stop_stream = true;
-                if ((pos - stream.last).Length() < maxSegmentLength) 
-                    return false;
+                //if ((pos - stream.last).Length() < maxSegmentLength) 
+                    //return false;
             }
 
             //check if another vertex nearby to use instead
-            var closestVertex = FindClosestVertex(pos, dir, mergeDistance, cosineSearchAngle, stream.last);
+            var closestVertex = FindClosestVertex(pos, Vector2.Normalize(dir), mergeDistance, cosineSearchAngle, stream.last);
             //Console.WriteLine(closestVertex.X + " find closest vertex " + closestVertex.Y);
 
             //check if edge intersects with another edge
@@ -615,14 +617,12 @@ namespace roadmap
 
             if(intersectedEdge != null && closestVertex.Equals(Vector2.Zero)) {
 
-                if ((intersectedPosition - intersectedEdge.a).Length() < mergeDistance)
+                if ((intersectedPosition - intersectedEdge.a).Length() < 5)
                 {
                     closestVertex = intersectedEdge.a;
-                    //Console.WriteLine(closestVertex.X + " a - closest vertex " + closestVertex.Y);
                 }
-                else if ((intersectedPosition - intersectedEdge.b).Length() < mergeDistance) {
+                else if ((intersectedPosition - intersectedEdge.b).Length() < 5) {
                     closestVertex = intersectedEdge.b;
-                    //Console.WriteLine(closestVertex.X + " b - closest vertex " + closestVertex.Y);
                 }
                 else
                 {
@@ -639,9 +639,6 @@ namespace roadmap
 
             if (!closestVertex.Equals(Vector2.Zero))
             {
-                Console.Write("gets here2.2");
-                Console.WriteLine(closestVertex);
-
                 stop_stream = true;
             }
             else closestVertex = pos;
@@ -661,18 +658,10 @@ namespace roadmap
                     if( all_edges.Contains(new Edge(s, stream.last, closestVertex)) || 
                         all_edges.Contains(new Edge(s, closestVertex, stream.last)) )
                     {
-                        e = null;
-                        break;
+                        return true;
                     }
                 }
-
-                if (e == null)
-                {
-                    Console.WriteLine("gets here2.3");
-                    stop_stream = true;
-                }
-                else
-                    all_edges.Add(e);
+                all_edges.Add(e);
 
             }
             if (stream.first.Equals(stream.last))
