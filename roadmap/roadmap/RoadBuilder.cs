@@ -24,6 +24,7 @@ namespace roadmap
         public PictureBox densityMap = new PictureBox();
         public PictureBox terrainMap = new PictureBox();
         public Bitmap terrain;
+        public Bitmap density;
         public int width;
         public int height;
 
@@ -43,27 +44,28 @@ namespace roadmap
                     eigen_cache[i, j] = new Tuple<Vector2, Vector2>(Vector2.Zero, Vector2.Zero);
             initialized = false;
             terrain = new Bitmap(Image.FromFile("terrain_map.png"), 800, 800);
-            terrainMap.Image = terrain;
-            terrainMap.Size = new Size(800, 800);
+            density = new Bitmap(Image.FromFile("density_map.png"), 800, 800);
 
             //gridline tensors
             //tensors.Add(Tensor.FromRTheta(20, 5 * Math.PI / 4, new Vector2(200f, 50f)));
-            tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(400f, 450f)));
+            //tensors.Add(Tensor.FromRTheta(20, Math.PI, new Vector2(400f, 450f)));
             //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
             //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(100f, 90f)));
-            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(370f, 430f)));
+            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(400f, 400f)));
         }
 
         public Color GetColor(int x, int y) 
         {
-            //float stretch_X = terrainMap.Width / (float)width;
-            //float stretch_Y = terrainMap.Height / (float)height;
-            //Console.WriteLine(x + " "+ y);
-            //Bitmap b = new Bitmap(terrainMap.Image, 800, 800);
             return terrain.GetPixel((int)( x), (int)( y));
 
         }
 
+
+        public Color GetDensity(int x, int y)
+        {
+            return density.GetPixel((int)(x), (int)(y));
+
+        }
         public void setDimensions(int width, int height)
         {
             bool recalc = false;
@@ -456,7 +458,7 @@ namespace roadmap
         public Streamline Trace(Vector2 min, Vector2 max, Seed seed, bool reverse, Queue seeds, bool tracingMajor)
         {
             int maxSegmentLength = 20;
-            int mergeDistance = 30;
+            int mergeDistance = 10;
             float cosineSearchAngle = 0.15f;
 
             var ss = FindClosestVertex(seed.pos, Vector2.Zero, mergeDistance, cosineSearchAngle, Vector2.Zero);
@@ -572,10 +574,12 @@ namespace roadmap
                     Console.WriteLine("gets here2");
                     break;
                 }
-    
+
 
                 //Accumulate seeds to trace into the alternative field
-                var seedSeparation = 100;
+                Color dense = GetDensity((int)position.X, (int)position.Y);
+                double yo = (dense.R + dense.G + dense.B)/3;
+                var seedSeparation = 20 + 80 * (1 - yo);
                 if (seedingDistance > seedSeparation)
                 {
                     seedingDistance = 0;
