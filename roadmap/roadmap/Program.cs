@@ -43,16 +43,18 @@ using roadmap;
 public class GtkCairo
 {
     static DrawingArea a;
-
+    static DrawingArea b;
     static void Main()
     {
         Gtk.Application.Init();
         Window w = new Window("RoadMap gridlines");
 
         a = new CairoGraphic();
-
+        b = new UI();
         Box box = new HBox(true, 0);
         box.Add(a);
+        box.Add(b);
+
         w.Add(box);
         w.Resize(800, 800);
         w.ShowAll();
@@ -80,7 +82,7 @@ public class CairoGraphic : DrawingArea
 
         /* Draw Highways */
         gr.LineWidth = 0.005;
-        drawHighways(gr);
+        //drawHighways(gr);
 
     }
 
