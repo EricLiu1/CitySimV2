@@ -33,7 +33,6 @@ using System.Reflection;
 using System.Collections;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using Cairo;
 using Gtk;
 using System.Collections.Generic;
@@ -42,26 +41,57 @@ using roadmap;
 
 public class GtkCairo
 {
-    static DrawingArea a;
-    static DrawingArea b;
+    static CairoGraphic map;
     static void Main()
     {
+        
         Gtk.Application.Init();
-        Window w = new Window("RoadMap gridlines");
+        Window MainWindow = new Window("RoadMap gridlines");
+        map = new CairoGraphic();
+        Box hbox = new HBox(false, 5);
+        hbox.Allocation = new Gdk.Rectangle(new Gdk.Point(0, 0), new Gdk.Size(1200, 800));
 
-        a = new CairoGraphic();
-        b = new UI();
-        Box box = new HBox(true, 0);
-        box.Add(a);
-        box.Add(b);
+        Box settings = new VBox(true, 0);
+        settings.Allocation = new Gdk.Rectangle(new Gdk.Point(0, 0), new Gdk.Size(400, 800));
 
-        w.Add(box);
-        w.Resize(800, 800);
-        w.ShowAll();
+        Label mylabel = new Label();
+        mylabel.Text = "Settings";
+        mylabel.Allocation = new Gdk.Rectangle(new Gdk.Point(0, 0), new Gdk.Size(390, 50));
 
+        settings.PackStart(mylabel, false, false, 5);
+
+        Button start = new Button("Start");
+        start.Clicked += (sender, EventArgs) => { map.startClicked(sender, EventArgs); };
+        start.Allocation = new Gdk.Rectangle(new Gdk.Point(0, 0), new Gdk.Size(185, 100));
+        settings.PackStart(start, true, true, 5);
+
+        Button reset = new Button("Reset");
+        reset.Clicked += (sender, EventArgs) => { map.resetClicked(sender, EventArgs); };
+        reset.Allocation = new Gdk.Rectangle(new Gdk.Point(0, 0), new Gdk.Size(185, 100));
+        settings.PackStart(reset, true, true, 5);
+
+
+
+
+
+        hbox.PackStart(map, true, true, 0);
+        hbox.PackStart(settings, false, false, 0);
+
+       
+        MainWindow.Add(hbox);
+        MainWindow.Resize(1200, 800);
+        MainWindow.ShowAll();
+        map.myWindow = MainWindow.GdkWindow;
         Gtk.Application.Run();
     }
+
 }
+
+public class MyEventArgs : EventArgs {
+    public Gdk.Window win { get; }
+}
+
+public delegate void MyEventHandler(MyEventArgs e);
 
 public class CairoGraphic : DrawingArea
 {
@@ -70,6 +100,8 @@ public class CairoGraphic : DrawingArea
     public List<Tensor> weightedavgs = new List<Tensor>();
     public List<Tensor> polyline;
     public RoadBuilder r = new RoadBuilder();
+    public bool draw_clicked = false;
+    public Gdk.Window myWindow;
 
     public void draw(Context gr)
     {
@@ -78,15 +110,15 @@ public class CairoGraphic : DrawingArea
 
         /* Draw Terrain */
         gr.LineWidth = 0.05;
-        //drawTerrain(gr);
+        drawTerrain(gr);
 
         /* Draw Highways */
         gr.LineWidth = 0.005;
-        //drawHighways(gr);
+        drawHighways(gr);
 
     }
 
-    public void drawTerrain(Context gr) 
+    public void drawTerrain(Context gr)
     {
         Cairo.Color normal_color = new Cairo.Color(0.9, 0.9, 0.9, 1);
         Cairo.Color water_color = new Cairo.Color(0.8, 0.8, 1.0, 1);
@@ -103,7 +135,7 @@ public class CairoGraphic : DrawingArea
             PointD end2 = new PointD(i / width, 1 / height);
             for (double j = 1; j < height; ++j)
             {
-                if (r.GetColor((int)i, (int) j).R == 0 && !water)
+                if (r.GetColor((int)i, (int)j).R == 0 && !water)
                 {
                     gr.LineTo(end2);
                     gr.Stroke();
@@ -135,7 +167,7 @@ public class CairoGraphic : DrawingArea
 
     }
 
-    public void drawHighways(Context gr) 
+    public void drawHighways(Context gr)
     {
         gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
         HashSet<Edge> all_edges = getStreamlines();
@@ -155,7 +187,7 @@ public class CairoGraphic : DrawingArea
         public int c;
         public Vector2 dir;
 
-        public pixel_seed(int tr, int tc, Vector2 tdir) 
+        public pixel_seed(int tr, int tc, Vector2 tdir)
         {
             r = tr;
             c = tc;
@@ -163,7 +195,7 @@ public class CairoGraphic : DrawingArea
         }
     }
 
-    public HashSet<Edge> getStreamlines() 
+    public HashSet<Edge> getStreamlines()
     {
         r.InitializeSeeds(new Vector2(0, 0), new Vector2(width, height));
         return r.all_edges;
@@ -171,19 +203,29 @@ public class CairoGraphic : DrawingArea
 
     protected override bool OnExposeEvent(Gdk.EventExpose args)
     {
-        Gdk.Window win = args.Window;
-        //Gdk.Rectangle area = args.Area;
+        //if(draw_clicked) 
+        //{
+            Context g = Gdk.CairoHelper.Create(myWindow);
 
-        Context g = Gdk.CairoHelper.Create(win);
+            int x, y, w, h, d;
+            myWindow.GetGeometry(out x, out y, out w, out h, out d);
+            width = 800;
+            height = 800;
+            draw(g);
+            g.Dispose();
+        //    draw_clicked = false;
+        //}
 
-        int x, y, w, h, d;
-        win.GetGeometry(out x, out y, out w, out h, out d);
-
-        width = w;
-        height = h;
-        draw(g);
-        g.Dispose();
         return true;
     }
 
+    public void startClicked(object sender, EventArgs args)
+    {
+        draw_clicked = true;
+    }
+
+    public void resetClicked(object sender, EventArgs args) {
+        draw_clicked = false;
+        r.all_edges.Clear();
+    }
 }

@@ -1,33 +1,58 @@
 ﻿
     using System;
-    using System.Reflection;
-    using System.Collections;
     using System.Numerics;
-    using System.Runtime.InteropServices;
     using System.Windows.Forms;
     using Cairo;
     using Gtk;
-    using System.Collections.Generic;
-    using System.Drawing;
-    using Microsoft.VisualBasic.Devices;
-    using System.Windows.Input;
-    //Ok so I think none of this currently works.
 
     namespace roadmap
     {
         public partial class UI : DrawingArea
         {
-            public void draw(int width, int height, System.Windows.Forms.PaintEventArgs e)
+        public void draw(Context gr)
             {
+            gr.SetSourceColor(new Cairo.Color(1, 1, 1, 1));
 
                 //Cursor CursorA = new Cursor(Cursor.Current.Handle);
-                SolidBrush greenBrush = new SolidBrush(System.Drawing.Color.Green);
-                e.Graphics.FillRectangle(greenBrush, Cursor.Position.X, Cursor.Position.Y, 1, 1);
+                //SolidBrush greenBrush = new SolidBrush(System.Drawing.Color.Green);
+                PointD start = new PointD(Cursor.Position.X, Cursor.Position.Y);
+                PointD end = new PointD(Cursor.Position.X + .1, Cursor.Position.Y + .1);
+            gr.MoveTo(start);
+            gr.LineTo(end);
+            gr.Stroke();
+                //gr.Graphics.FillRectangle(greenBrush, Cursor.Position.X, Cursor.Position.Y, 1, 1)/
 
             }
 
         }
-        public partial class Form1 : Form
+        public class buttons
+        {
+        
+            static Widget xpm_label_box( string label_text)
+            {
+
+
+                /* Create box for image and label */
+                HBox box = new HBox(false, 0);
+                box.BorderWidth = 2;
+
+                /* Now on to the image stuff */
+                //Gtk.Image image = new Gtk.Image(xpm_filename);
+
+                /* Create a label for the button */
+                Gtk.Label label = new Gtk.Label(label_text);
+
+                /* Pack the image and label into the box */
+                //box.PackStart(image, false, false, 3);
+                box.PackStart(label, false, false, 3);
+
+                //image.Show();
+                label.Show();
+
+                return box;
+            }
+        }
+        public class Form1 : Form
         {
             public Form1()
             {
