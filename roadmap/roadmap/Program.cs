@@ -114,7 +114,6 @@ public class CairoGraphic : DrawingArea
         drawTerrain(gr);
 
         /* Draw Highways */
-        gr.LineWidth = 0.005;
         drawHighways(gr);
 
     }
@@ -171,23 +170,30 @@ public class CairoGraphic : DrawingArea
     public void drawHighways(Context gr)
     {
         
+
+
+        gr.LineWidth = 0.005;
+
+        //PointD start2 = new PointD(0, 0);
+        //PointD end2 = new PointD(1, 1);
+        //gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
+        //gr.MoveTo(start2);
+        //gr.LineTo(end2);
+        //gr.Stroke();
+
         gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
-        HashSet<Edge> all_edges = getStreamlines();
-        foreach (var e in all_edges)
+        double factor = 800;
+        int count = 0;
+        foreach (var e in r.all_edges)
         {
-            PointD start = new PointD(e.a.X / width, e.a.Y / height);
-            PointD end = new PointD(e.b.X / width, e.b.Y / height);
+            PointD start = new PointD(e.a.X / factor, e.a.Y / factor);
+            PointD end = new PointD(e.b.X / factor, e.b.Y / factor);
             gr.MoveTo(start);
             gr.LineTo(end);
+            gr.Stroke();
+            count++;
         }
-        gr.Stroke();
 
-        PointD start2 = new PointD(0, 0);
-        PointD end2 = new PointD(1, 1);
-        gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
-        gr.MoveTo(start2);
-        gr.LineTo(end2);
-        gr.Stroke();
     }
 
     internal struct pixel_seed
@@ -202,11 +208,6 @@ public class CairoGraphic : DrawingArea
             c = tc;
             dir = tdir;
         }
-    }
-
-    public HashSet<Edge> getStreamlines()
-    {
-        return r.all_edges;
     }
 
     protected override bool OnExposeEvent(Gdk.EventExpose args)
