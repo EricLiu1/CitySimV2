@@ -100,8 +100,9 @@ public class CairoGraphic : DrawingArea
     public List<Tensor> weightedavgs = new List<Tensor>();
     public List<Tensor> polyline;
     public RoadBuilder r = new RoadBuilder();
-    public bool draw_clicked = false;
     public Gdk.Window myWindow;
+    public Context g;
+    public bool first_time = true;
 
     public void draw(Context gr)
     {
@@ -169,6 +170,7 @@ public class CairoGraphic : DrawingArea
 
     public void drawHighways(Context gr)
     {
+        
         gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
         HashSet<Edge> all_edges = getStreamlines();
         foreach (var e in all_edges)
@@ -178,6 +180,13 @@ public class CairoGraphic : DrawingArea
             gr.MoveTo(start);
             gr.LineTo(end);
         }
+        gr.Stroke();
+
+        PointD start2 = new PointD(0, 0);
+        PointD end2 = new PointD(1, 1);
+        gr.SetSourceColor(new Cairo.Color(1, 1, 0, 1));
+        gr.MoveTo(start2);
+        gr.LineTo(end2);
         gr.Stroke();
     }
 
@@ -197,22 +206,25 @@ public class CairoGraphic : DrawingArea
 
     public HashSet<Edge> getStreamlines()
     {
-        r.InitializeSeeds(new Vector2(0, 0), new Vector2(width, height));
         return r.all_edges;
     }
 
     protected override bool OnExposeEvent(Gdk.EventExpose args)
     {
-        //if(draw_clicked) 
-        //{
-            Context g = Gdk.CairoHelper.Create(myWindow);
+        if (first_time)
+        {
+            myWindow = args.Window;
 
-            int x, y, w, h, d;
-            myWindow.GetGeometry(out x, out y, out w, out h, out d);
-            width = 800;
-            height = 800;
-            draw(g);
-            g.Dispose();
+            first_time = false;
+        }
+
+        g = Gdk.CairoHelper.Create(myWindow);
+        int x, y, w, h, d;
+        myWindow.GetGeometry(out x, out y, out w, out h, out d);
+        width = 800;
+        height = 800;
+        draw(g);
+        g.Dispose();
         //    draw_clicked = false;
         //}
 
@@ -221,11 +233,10 @@ public class CairoGraphic : DrawingArea
 
     public void startClicked(object sender, EventArgs args)
     {
-        draw_clicked = true;
+        r.InitializeSeeds(new Vector2(0, 0), new Vector2(width, height));
     }
 
     public void resetClicked(object sender, EventArgs args) {
-        draw_clicked = false;
         r.all_edges.Clear();
     }
 }

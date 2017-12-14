@@ -351,15 +351,17 @@ namespace roadmap
 
         public void InitializeSeeds(Vector2 min, Vector2 max) 
         {
-            Console.WriteLine("Starting timer");
-            //Console.WriteLine(min + " " + max);
-            Stopwatch timer = new Stopwatch();
-            timer.Start();
+            
 
             if (initialized)
                 return;
 
             initialized = true;
+
+            Console.WriteLine("Starting timer");
+            //Console.WriteLine(min + " " + max);
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
 
             var diff = max - min;
             //Vector2 major, minor;
