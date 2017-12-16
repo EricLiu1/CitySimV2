@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Numerics;
 using Priority_Queue;
 
+//Tensor class and math was obtained from the below source
+//https://bitbucket.org/martindevans/base-citygeneration/src/87878c33627ffc2478c05857936316c4baae6bbe/Base-CityGeneration/Elements/Roads/Hyperstreamline/Tensor.cs?at=default&fileviewer=file-view-default
 public struct Tensor
 {
     // A tensor is a 2x2 symmetric and traceless matrix of the form
@@ -105,7 +107,6 @@ public struct Tensor
         foreach (var t in weightedavgs)
         {
             d_squared = (float)Math.Pow(t.center2.X - pos.X, 2) + (float)Math.Pow(t.center2.Y - pos.Y, 2);
-            //Console.WriteLine("distance squared: " + d_squared);
             if (t.type == 0)
                 combined_tensor += ((float)Math.Exp(decayConstant * d_squared) * t);
 
@@ -146,7 +147,6 @@ public class Edge
 {
     public Vector2 a;
     public Vector2 b;
-    public bool remove = false;
     public Vector2 direction;
 
     public Streamline streamline;

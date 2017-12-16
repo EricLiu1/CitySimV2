@@ -18,6 +18,7 @@ namespace roadmap
         public List<Tensor> tensors;
         public bool initialized;
         public Tuple<Vector2, Vector2>[,] eigen_cache;
+        public Queue seeds;
 
         public PictureBox densityMap = new PictureBox();
         public PictureBox terrainMap = new PictureBox();
@@ -45,11 +46,14 @@ namespace roadmap
             density = new Bitmap(Image.FromFile("density_map.png"), 800, 800);
 
             //gridline tensors
-            tensors.Add(Tensor.FromRTheta(20, Math.PI / 2, new Vector2(200f, 200f)));
-            tensors.Add(Tensor.FromRTheta(20, 3 * Math.PI / 4, new Vector2(400f, 400f)));
-            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(250f, 250f)));
-            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(100f, 90f)));
-            //tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(400f, 400f)));
+            //tensors.Add(Tensor.FromRTheta(1.0, Math.PI, new Vector2(400f, 400f)));
+            tensors.Add(Tensor.FromRTheta(1.0, Math.PI, new Vector2(600f, 600f)));
+
+            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(150f, 150f)));
+
+            tensors.Add(Tensor.FromXY(new Vector2(0, 0), new Vector2(650f, 600f)));
+
+            seeds = new Queue();
         }
 
         public Color GetColor(int x, int y) 
@@ -284,75 +288,77 @@ namespace roadmap
         }
         public void Rk4_sample_field(out Vector2 major, out Vector2 minor, Vector2 point, Vector2 prev_dir, List<Tensor> w)
         {
-            //w.AddRange(polyline_river);
-
             Vector2 k1_maj, k2_maj, k3_maj, k4_maj;
             Vector2 k1_min, k2_min, k3_min, k4_min;
 
             Tensor.Sample(point, w).EigenVectors(out major, out minor);
-            k1_maj = corrected_vector(major, prev_dir);
-            k1_min = corrected_vector(minor, prev_dir);
+            k1_maj = fix_direction(major, prev_dir);
+            k1_min = fix_direction(minor, prev_dir);
 
             Tensor.Sample(point + k1_maj / 2f, w).EigenVectors(out major, out minor);
-            k2_maj = corrected_vector(major, prev_dir);
+            k2_maj = fix_direction(major, prev_dir);
             Tensor.Sample(point + k1_min / 2f, w).EigenVectors(out major, out minor);
-            k2_min = corrected_vector(minor, prev_dir);
+            k2_min = fix_direction(minor, prev_dir);
 
             Tensor.Sample(point + k2_maj / 2f, w).EigenVectors(out major, out minor);
-            k3_maj = corrected_vector(major, prev_dir);
+            k3_maj = fix_direction(major, prev_dir);
             Tensor.Sample(point + k2_min / 2f, w).EigenVectors(out major, out minor);
-            k3_min = corrected_vector(minor, prev_dir);
+            k3_min = fix_direction(minor, prev_dir);
 
             Tensor.Sample(point + k3_maj, w).EigenVectors(out major, out minor);
-            k4_maj = corrected_vector(major, prev_dir);
+            k4_maj = fix_direction(major, prev_dir);
             Tensor.Sample(point + k3_min, w).EigenVectors(out major, out minor);
-            k4_min = corrected_vector(minor, prev_dir);
+            k4_min = fix_direction(minor, prev_dir);
 
-            major = corrected_vector((k1_maj / 6f + k2_maj / 3f + k3_maj / 3f + k4_maj / 6f), prev_dir);
-            minor = corrected_vector((k1_min / 6f + k2_min / 3f + k3_min / 3f + k4_min / 6f), prev_dir);
+            major = fix_direction((k1_maj / 6f + k2_maj / 3f + k3_maj / 3f + k4_maj / 6f), prev_dir);
+            minor = fix_direction((k1_min / 6f + k2_min / 3f + k3_min / 3f + k4_min / 6f), prev_dir);
         }
 
+        //NOT USED
         public void Rk4_sample_field_decay(out Vector2 major, out Vector2 minor, Vector2 point, Vector2 prev_dir, List<Tensor> w)
         {
-            //w.AddRange(polyline_river);
-
             Vector2 k1_maj, k2_maj, k3_maj, k4_maj;
             Vector2 k1_min, k2_min, k3_min, k4_min;
            
             Tensor.SampleDecayWeights(point, w).EigenVectors(out major, out minor);
-            k1_maj = corrected_vector(major, prev_dir);
-            k1_min = corrected_vector(minor, prev_dir);
+            k1_maj = fix_direction(major, prev_dir);
+            k1_min = fix_direction(minor, prev_dir);
 
             Tensor.SampleDecayWeights(point + k1_maj / 2f, w).EigenVectors(out major, out minor);
-            k2_maj = corrected_vector(major, prev_dir);
+            k2_maj = fix_direction(major, prev_dir);
             Tensor.SampleDecayWeights(point + k1_min / 2f, w).EigenVectors(out major, out minor);
-            k2_min = corrected_vector(minor, prev_dir);
+            k2_min = fix_direction(minor, prev_dir);
 
             Tensor.SampleDecayWeights(point + k2_maj / 2f, w).EigenVectors(out major, out minor);
-            k3_maj = corrected_vector(major, prev_dir);
+            k3_maj = fix_direction(major, prev_dir);
             Tensor.SampleDecayWeights(point + k2_min / 2f, w).EigenVectors(out major, out minor);
-            k3_min = corrected_vector(minor, prev_dir);
+            k3_min = fix_direction(minor, prev_dir);
 
             Tensor.SampleDecayWeights(point + k3_maj, w).EigenVectors(out major, out minor);
-            k4_maj = corrected_vector(major, prev_dir);
+            k4_maj = fix_direction(major, prev_dir);
             Tensor.SampleDecayWeights(point + k3_min, w).EigenVectors(out major, out minor);
-            k4_min = corrected_vector(minor, prev_dir);
+            k4_min = fix_direction(minor, prev_dir);
 
-            major = corrected_vector((k1_maj / 6f + k2_maj / 3f + k3_maj / 3f + k4_maj / 6f), prev_dir);
-            minor = corrected_vector((k1_min / 6f + k2_min / 3f + k3_min / 3f + k4_min / 6f), prev_dir);
+            major = fix_direction((k1_maj / 6f + k2_maj / 3f + k3_maj / 3f + k4_maj / 6f), prev_dir);
+            minor = fix_direction((k1_min / 6f + k2_min / 3f + k3_min / 3f + k4_min / 6f), prev_dir);
         }
 
-        public Vector2 corrected_vector(Vector2 pos, Vector2 dir)
+        public Vector2 fix_direction(Vector2 pos, Vector2 dir)
         {
             if (dir == Vector2.Zero || Vector2.Dot(dir, pos) >= 0)
                 return pos;
             return -pos;
         }
 
-        public void InitializeSeeds(Vector2 min, Vector2 max) 
+        /*Parameters
+         * min : bounds
+         * max : bounds
+         * 
+         * Creates entire roadmap
+         */
+        public void Create(Vector2 min, Vector2 max) 
         {
             Console.WriteLine("Starting timer");
-            //Console.WriteLine(min + " " + max);
             Stopwatch timer = new Stopwatch();
             timer.Start();
 
@@ -362,17 +368,19 @@ namespace roadmap
             initialized = true;
 
             var diff = max - min;
-            //Vector2 major, minor;
-
-            //Rk4_sample_field(out major, out minor, min, Vector2.Zero, tensors);
-
-            var seeds = RandomSeeds(min, max);
-            SeedRunner(min, max, seeds, true, true);
+            MakeInitialSeeds(min, max);
+            SeedRunner(min, max);
             timer.Stop();
             Console.WriteLine("Done! Time elapsed: " + timer.Elapsed);
         }
 
-        private static IEnumerable<Seed> RandomSeeds(Vector2 min, Vector2 max)
+        /*Parameters
+         * min : bounds
+         * max : bounds
+         * 
+         * Populates queue with 10 random seeds within the bounds of the box
+         */
+        public void MakeInitialSeeds(Vector2 min, Vector2 max)
         {
             var Dif = max - min;
 
@@ -384,83 +392,63 @@ namespace roadmap
                 if (p.X < min.X || p.Y < min.Y || p.X > max.X || p.Y > max.Y)
                     i--;
                 else
-                    yield return new Seed(p, true);
+                    seeds.Enqueue(new Seed(p, true));
             }
         }
 
-        public void SeedRunner(Vector2 min, Vector2 max, IEnumerable<Seed> initialSeeds, bool forward, bool backward)
+        /*Parameters
+         * min : bounds
+         * max : bounds
+         * 
+         * Calls trace twice for every seed.
+         */
+        public void SeedRunner(Vector2 min, Vector2 max)
         {
-            //Console.Write(terrainMap.Width + " X " + terrainMap.Height);
-            Queue seeds = new Queue();
-
-            foreach (var initialSeed in initialSeeds)
-                seeds.Enqueue(initialSeed);
-
-            int i = 0;
-
-            //Trace out roads for every single seed
             while (seeds.Count > 0)
             {
                 Seed s = (Seed)seeds.Dequeue();
-                //Console.WriteLine(seeds.Count + " " + s.pos);
-                if (forward)
-                {
-                    var stream = Trace(min, max, s, false, seeds, s.tracingMajor);
-                    if (stream != null)
-                    {
-                        streams.Add(stream);
-                    }
 
-                    //var stream2 = Trace(min, max, s, false, seeds, false);
-                    //if(stream2 != null) {
-                    //    streams.Add(stream2);
-                    //}
-                }
+                var stream = Trace(min, max, s, false, s.tracingMajor);
+                if (stream != null) streams.Add(stream);
 
-                if (backward)
-                {
-                    var stream = Trace(min, max, s, true, seeds, s.tracingMajor);
-                    if (stream != null)
-                    {
-                        streams.Add(stream);
-                        //streamCreated(stream);
-                    }
-                    //var stream2 = Trace(min, max, s, true, seeds, false);
-                    //if (stream2 != null)
-                    //{
-                    //    streams.Add(stream2);
-                    //    //streamCreated(stream);
-                    //}
-                }
-                ++i;
+                stream = Trace(min, max, s, true, s.tracingMajor);
+                if (stream != null) streams.Add(stream);
             }
         }
 
 
-
-        public Streamline Trace(Vector2 min, Vector2 max, Seed seed, bool reverse, Queue seeds, bool tracingMajor)
+        /*Parameters
+         * min : bounds
+         * max : bounds
+         * seed: start point of streamline
+         * reverse: streamline goes in reverse for one segment to start seed 
+         *          generation in the opposite direction as well
+         * tracingMajor: tells us which eigen vector to trace along (major or minor)
+         * 
+         * Returns: the full traced streamline
+         */
+        public Streamline Trace(Vector2 min, Vector2 max, Seed seed, bool reverse, bool tracingMajor)
         {
-            int maxSegmentLength = 20;
-            int mergeDistance = 10;
-            float cosineSearchAngle = 0.15f;
+            int maxSegmentLength = 5;
+            int mergeDistance = 12;
 
-            var ss = FindClosestVertex(seed.pos, Vector2.Zero, mergeDistance, cosineSearchAngle, Vector2.Zero);
-            Streamline stream;
-            //stream = new Streamline(seed.pos);
+            var ss = FindClosestVertex(seed.pos, Vector2.Zero, mergeDistance, seed.pos);
+            Streamline stream = null;
 
             if (ss.Equals(Vector2.Zero))
                 stream = new Streamline(seed.pos);
+           
             else
             {
-                //stream = new Streamline(ss);
-                all_edges.Add(new Edge(null, seed.pos, ss));
-                stream = new Streamline(seed.pos);
-                stream.last = ss;
+                stream = new Streamline(ss);
+                stream.last = seed.pos;
+                all_edges.Add(new Edge(stream, seed.pos, ss));
                 return stream;
             }
 
-
-            var seedingDistance = float.MaxValue;
+            //start seed step distance high, 
+            //so seed is created after first segment is drawn
+            var seedStepDistance = float.MaxValue;
             var segment = Vector2.Zero;
 
             Vector2 position = seed.pos;
@@ -469,21 +457,18 @@ namespace roadmap
             Vector2 prev_direction = Vector2.Zero;
             Vector2 p;
 
-            //Extended naieve tracing (accumulate naieve traces, stop once we hit sample OR length limit)
             Vector2 temp;
+
+            //continues tracing stream until stream breaks;
             for (var i = 0; i < 500; i++)
             {
                 Vector2 major, minor;
                 p = prev_direction;
 
-                //Rk4_sample_field(out major, out minor, position, previous, tensors);
-
-                //if (tracingMajor)
-                //    direction = major;
-                //else
-                //direction = minor;
                 var segmentLength = 0.0f;
                 segment = Vector2.Zero;
+
+                //creates segment
                 for (var j = 0; j < 20 && segmentLength < maxSegmentLength; j++)
                 {
 
@@ -511,167 +496,107 @@ namespace roadmap
                         segment += temp;
                         segmentLength = segment.Length();
                         p = temp;
-                        if (Vector2.Dot(Vector2.Normalize(prev_direction), temp / temp.Length()) < 0.9961f)
+                        if (Vector2.Dot(prev_direction, segment / segment.Length()) < .9f)
                             break;
                     }
                     else break;
 
                 }
-                if (i == 0 && reverse)
-                    segment = -segment;
+                if (i == 0 && reverse) segment = -segment;
 
-                //degenerate step check
-                if (segmentLength < 0.005f)
-                {
-                    //Console.WriteLine("gets here1");
-                    break;
-                }
+                //on a tensor degenerate point
+                if (segmentLength < 0.00005f) break;
 
-                //Excessive step check
-                if (segmentLength > maxSegmentLength)
-                {
-                    segment = segment / segmentLength * maxSegmentLength;
-                    segmentLength = maxSegmentLength;
-                }
-                //if ((int)position.X < 780 ){
-                //    if (GetColor((int)position.X + 20, (int)position.Y).G == 0)
-                //    {
-                //        //Console.WriteLine("gets here coloor");
-
-                //        break;
-                //    }
-                //}
-                //else if (GetColor((int)position.X, (int)position.Y).G == 0)
-                //{
-                //    //Console.WriteLine("gets here coloor");
-
-                //    break;
-                //}
+                //the offset of x is a temporary fix to line up roads to stop on river
+                //Color check
+                if ((int)position.X < 780 && GetColor((int)position.X + 20, (int)position.Y).G == 0) break;
+                if (GetColor((int)position.X, (int)position.Y).G == 0) break;
 
 
                 //Step along path
-                //Vector2 temp = position;
                 position += segment;
-                seedingDistance += segmentLength;
+                seedStepDistance += segmentLength;
 
                 //Create the segment and break if it says so
-                if (CreateAndCheckEdge(min, max, stream, position, Vector2.Normalize(segment), maxSegmentLength, mergeDistance, cosineSearchAngle)) {
-                    //Console.WriteLine("gets here2");
-                    break;
-                }
+                if (MakeEdgeAndStopStream(min, max, stream, position, Vector2.Normalize(segment), mergeDistance)) break;
 
 
-                //Accumulate seeds to trace into the alternative field
+                //Get seed density from density map
                 Color dense = GetDensity((int)position.X, (int)position.Y);
                 double yo = dense.GetBrightness();
-                //Console.Write(yo + " ");
-                //var seedSeparation = 30 + 200 * (1 - yo);
-                var seedSeparation = 75;
+                var density = 10 + 100 * (1 - yo);
 
-                //Console.Write(seedSeparation + " ");
-
-                if (seedingDistance > seedSeparation)
+                //adds new seed that is traced along the opposite eigenvector
+                if (seedStepDistance > density)
                 {
-                    //Console.Write(seedSeparation + " ");
-
-                    seedingDistance = 0;
+                    seedStepDistance = 0;
                     seeds.Enqueue(new Seed(position, !seed.tracingMajor));
                 }
 
-                prev_direction = segment;
+                prev_direction = Vector2.Normalize(segment);
             }
-            //Console.WriteLine(position);
             return stream;
         }
 
 
-        //This function was not created by us 
-        public bool CreateAndCheckEdge(Vector2 min, Vector2 max, Streamline stream, Vector2 pos, Vector2 dir, float maxSegmentLength, float mergeDistance, float cosineSearchAngle)
+        /*Parameters
+         * min : bounds
+         * max : bounds
+         * stream: streamline that we're tracing and adding an edge to
+         * pos: vertex being added to stream
+         * dir: direction of edge about to be created
+         * mergedistance: how far to search for neighbor vertices
+         * 
+         * Returns: a boolean stating whether or not to stop the stream
+         */
+        public bool MakeEdgeAndStopStream(Vector2 min, Vector2 max, Streamline stream, Vector2 pos, Vector2 dir, float mergeDistance)
         {
             bool stop_stream = false;
 
             //check if distance too short
             if (pos.X < min.X || pos.Y < min.Y || pos.X > max.X || pos.Y > max.Y)
-            {
-                //Console.Write("gets here2.1");
-                //Console.WriteLine(pos);
-
-
                 stop_stream = true;
-                //if ((pos - stream.last).Length() < maxSegmentLength) 
-                    //return false;
-            }
 
             //check if another vertex nearby to use instead
-            var closestVertex = FindClosestVertex(pos, Vector2.Normalize(dir), mergeDistance, cosineSearchAngle, stream.last);
-            //Console.WriteLine(closestVertex.X + " find closest vertex " + closestVertex.Y);
+            var closestVertex = FindClosestVertex(pos, Vector2.Normalize(dir), mergeDistance, stream.last);
 
             //check if edge intersects with another edge
             Edge intersectedEdge = null;
 
             var intersectedPosition = FindEdgeIntersection(stream.last, pos, out intersectedEdge);
 
-            if(intersectedEdge != null && closestVertex.Equals(Vector2.Zero)) {
-
-                if ((intersectedPosition - intersectedEdge.a).Length() < 5)
-                {
-                    closestVertex = intersectedEdge.a;
-                }
-                else if ((intersectedPosition - intersectedEdge.b).Length() < 5) {
-                    closestVertex = intersectedEdge.b;
-                }
-                else
-                {
-                    closestVertex = intersectedPosition;
-                    all_edges.Remove(intersectedEdge);
-                    all_edges.Add(new Edge(intersectedEdge.streamline, intersectedEdge.a, intersectedPosition));
-                    all_edges.Add(new Edge(intersectedEdge.streamline, intersectedPosition, intersectedEdge.b));
-                    intersectedEdge.streamline.vertices.Add(intersectedPosition);
-                }
-            }
+            if (intersectedEdge != null && closestVertex.Equals(Vector2.Zero)) 
+                closestVertex = intersectedPosition;
 
             //check and handle intersection
-            //Console.Write(stop_stream);
-
             if (!closestVertex.Equals(Vector2.Zero))
-            {
                 stop_stream = true;
-            }
             else closestVertex = pos;
-
-            //Console.Write(stop_stream);
 
             //if new vertex is being added to the streamline, or if we're making a loop
             if (!stream.vertices.Contains(closestVertex) || stream.first.Equals(closestVertex))
             {
-                //Edge e = stream.Extend(closestVertex);
                 stream.vertices.Add(closestVertex);
                 Edge e = new Edge(stream, stream.last, closestVertex);
                 stream.last = closestVertex;
-
-                foreach(var s in streams)
-                {
-                    if( all_edges.Contains(new Edge(s, stream.last, closestVertex)) || 
-                        all_edges.Contains(new Edge(s, closestVertex, stream.last)) )
-                    {
-                        return true;
-                    }
-                }
                 all_edges.Add(e);
 
             }
             if (stream.first.Equals(stream.last))
-            {
                 stop_stream = true;
-
-            }
-            //Console.Write(stop_stream + "\n");
-            //Console.WriteLine(closestVertex);
             return stop_stream;
         }
 
         //checks if edge intersects with any other edge, and returns the first intersecting position
         //https://stackoverflow.com/questions/563198/whats-the-most-efficent-way-to-calculate-where-two-line-segments-intersect
+
+        /*Parameters
+         * v1 : last vertex on stream
+         * v2 : new verterx to add to stream
+         * output intersected edge
+         * 
+         * Returns: a pos where the new edge intersects with an old edge
+         */
         public Vector2 FindEdgeIntersection(Vector2 v1, Vector2 v2, out Edge intersected) {
             
             intersected = null;
@@ -708,21 +633,21 @@ namespace roadmap
          * 
          * Returns: the vertex closest to pos
          */
-        public Vector2 FindClosestVertex(Vector2 pos, Vector2 dir, float mergeDistance, float angle, Vector2 last)
+        public Vector2 FindClosestVertex(Vector2 pos, Vector2 dir, float mergeDistance, Vector2 last)
         {
             float closestDistance = mergeDistance;
             Vector2 closeEnoughVertex = Vector2.Zero;
 
             foreach (var vertex in all_vertices)
             {
-                if (last != Vector2.Zero && (vertex.Equals(last) || vertex.Equals(pos))) continue;
+                if ((vertex.Equals(last) || vertex.Equals(pos))) continue;
 
                 var diff = vertex - pos;
                 var l = diff.Length();
 
-                if (l > closestDistance || l < 0.00005f) continue;
+                if (l > closestDistance) continue;
 
-                if (dir != Vector2.Zero && Vector2.Dot(diff / l, dir) < angle) continue;
+                if (dir != Vector2.Zero && Vector2.Dot(diff / l, dir) < 0.15f) continue;
 
                 closestDistance = l;
                 closeEnoughVertex = vertex;

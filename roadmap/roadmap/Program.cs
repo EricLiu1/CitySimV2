@@ -1,34 +1,4 @@
-﻿//
-//
-//  Mono.Cairo drawing samples using GTK# as drawing surface
-//  Autor: Jordi Mas <jordi@ximian.com>. Based on work from Owen Taylor
-//         Hisham Mardam Bey <hisham@hisham.cc>
-//
-
-//
-// Copyright (C) 2004 Novell, Inc (http://www.novell.com)
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-// 
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-
-using System;
+﻿using System;
 using System.Reflection;
 using System.Collections;
 using System.Numerics;
@@ -76,7 +46,7 @@ public class CairoGraphic : DrawingArea
 
         /* Draw Terrain */
         gr.LineWidth = 0.05;
-        //drawTerrain(gr);
+        drawTerrain(gr);
 
         /* Draw Highways */
         gr.LineWidth = 0.005;
@@ -163,14 +133,13 @@ public class CairoGraphic : DrawingArea
 
     public HashSet<Edge> getStreamlines() 
     {
-        r.InitializeSeeds(new Vector2(0, 0), new Vector2(width, height));
+        r.Create(new Vector2(0, 0), new Vector2(width, height));
         return r.all_edges;
     }
 
     protected override bool OnExposeEvent(Gdk.EventExpose args)
     {
         Gdk.Window win = args.Window;
-        //Gdk.Rectangle area = args.Area;
 
         Context g = Gdk.CairoHelper.Create(win);
 
